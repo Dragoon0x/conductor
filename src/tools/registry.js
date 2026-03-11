@@ -27,16 +27,40 @@ function opt(schema) { return { ...schema, optional: true }; }
 export const TOOLS = [
   // ═══ CREATE ═══
   { name: 'create_frame', category: 'create',
-    description: 'Create an auto-layout frame with grid-aligned spacing, proper padding, and constraints.',
-    inputSchema: { type: 'object', properties: { name: str('Frame name'), width: opt(num('Width')), height: opt(num('Height')), direction: opt(str('horizontal or vertical')), padding: opt(num('Padding (snapped to grid)')), gap: opt(num('Gap (snapped to grid)')), fill: opt(str('Background color hex')) }, required: ['name'] } },
+    description: 'Create a single auto-layout frame. IMPORTANT: For multi-element designs (pages, sections, dashboards), use create_page or create_section instead — they handle all nesting automatically. If using create_frame directly, ALWAYS set parentId to nest inside a parent frame, and ALWAYS set direction, padding, and gap for auto-layout.',
+    inputSchema: { type: 'object', properties: { name: str('Frame name'), width: opt(num('Width')), height: opt(num('Height')), direction: opt(str('VERTICAL or HORIZONTAL')), padding: opt(num('Padding in px (use multiples of 8)')), paddingTop: opt(num('Top padding')), paddingBottom: opt(num('Bottom padding')), paddingLeft: opt(num('Left padding')), paddingRight: opt(num('Right padding')), gap: opt(num('Gap between children (use multiples of 8)')), fill: opt(str('Background color hex')), cornerRadius: opt(num('Corner radius')), parentId: opt(str('REQUIRED for nesting: parent frame ID')), primaryAxisAlignItems: opt(str('MIN, CENTER, MAX, SPACE_BETWEEN')), counterAxisAlignItems: opt(str('MIN, CENTER, MAX, STRETCH')), primaryAxisSizingMode: opt(str('FIXED, HUG, FILL')), counterAxisSizingMode: opt(str('FIXED, HUG, FILL')) }, required: ['name'] } },
 
   { name: 'create_page', category: 'create',
-    description: 'Create a full page from intent: landing, pricing, dashboard, settings, auth. Generates proper section hierarchy with auto-layout.',
-    inputSchema: { type: 'object', properties: { pageType: str('Page type: landing, pricing, dashboard, settings, auth, blog, portfolio, docs'), title: opt(str('Page title')), sections: opt(arr('Section types to include')), brandColor: opt(str('Primary brand color hex')), darkMode: opt(bool('Generate dark mode variant')) }, required: ['pageType'] } },
+    description: 'THE PRIMARY TOOL FOR DESIGNING PAGES. Creates a complete, polished, production-ready page with all sections, components, and content — fully nested with auto-layout, proper spacing, and design-intelligent values. One call generates 40-80 Figma elements. Use this INSTEAD of calling create_frame/create_text individually. Supports: landing, pricing, dashboard page types. Pass brand color, title, features, stats, and other content as parameters.',
+    inputSchema: { type: 'object', properties: {
+      pageType: str('Page type: landing, pricing, dashboard'),
+      title: opt(str('Hero heading text')),
+      subtitle: opt(str('Hero subtitle text')),
+      brand: opt(str('Brand/company name (appears in nav and footer)')),
+      brandColor: opt(str('Primary brand color hex (default #6366f1)')),
+      ctaText: opt(str('Primary CTA button text')),
+      darkMode: opt(bool('Dark mode (default true)')),
+      width: opt(num('Page width (default 1440)')),
+      navItems: opt(arr('Navigation link labels')),
+      features: opt(arr('Feature objects with icon, title, desc fields')),
+      stats: opt(arr('Stat objects with value and label fields')),
+      tiers: opt(arr('Pricing tier objects with name, price, period, desc, features, cta, highlighted fields')),
+      metrics: opt(arr('Dashboard metric objects with label, value, change, positive fields')),
+    }, required: ['pageType'] } },
 
   { name: 'create_section', category: 'create',
-    description: 'Create a page section: hero, features, testimonials, FAQ, CTA, pricing, stats, team. Pattern-aware with proper hierarchy.',
-    inputSchema: { type: 'object', properties: { sectionType: str('Section type: hero, features, testimonials, faq, cta, pricing, stats, team, footer, header'), heading: opt(str('Section heading')), content: opt(str('Content description')), columns: opt(num('Number of columns for grid sections')) }, required: ['sectionType'] } },
+    description: 'Creates a complete page section with all child elements, auto-layout, and proper nesting. One call generates 5-20 Figma elements. Use this INSTEAD of manually building sections. Supports: hero, features, pricing, cta, testimonials, faq section types.',
+    inputSchema: { type: 'object', properties: {
+      sectionType: str('Section type: hero, features, testimonials, faq, cta, pricing'),
+      heading: opt(str('Section heading')),
+      subheading: opt(str('Section subtitle')),
+      brandColor: opt(str('Brand color hex')),
+      ctaText: opt(str('CTA button text')),
+      width: opt(num('Section width (default 1440)')),
+      features: opt(arr('Feature objects for features section')),
+      testimonials: opt(arr('Testimonial objects with quote, author, role')),
+      faqs: opt(arr('FAQ objects with q and a fields')),
+    }, required: ['sectionType'] } },
 
   { name: 'create_card', category: 'create',
     description: 'Create a card with proper padding, radius, shadow depth, and content hierarchy.',
@@ -281,7 +305,7 @@ export const TOOLS = [
 
   // ═══ DESIGN CRAFT ═══
   { name: 'get_design_craft_guide', category: 'craft',
-    description: 'IMPORTANT: Call this FIRST before creating any design. Returns comprehensive professional design rules covering typography scales, spacing systems, color palettes, component patterns, layout architecture, and anti-patterns. Read and follow these rules to produce production-quality designs.',
+    description: 'CALL THIS FIRST before any design work. Returns professional design rules: typography scales, spacing systems (8px grid), color palettes, component patterns, and anti-patterns. Following these rules is the difference between amateur and production-quality output. Read the full guide before calling any create_ tools.',
     inputSchema: { type: 'object', properties: {}, required: [] } },
 
   // ═══ CREATE (additional) ═══
