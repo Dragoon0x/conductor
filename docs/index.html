@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONDUCTOR — Design-intelligent MCP server for Figma</title>
+<meta name="description" content="An MCP server that doesn't just place shapes — it understands design. 8px grid, type scale ratios, auto-layout, component reuse. Figsor makes shapes. Conductor makes designs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#faf9f7;--bg2:#f2f0ec;--surface:#fff;--surface2:#f7f6f3;
+  --border:#e4e0da;--border2:#d0cbc2;
+  --dim:#9a9488;--text:#6b6560;--bright:#2a2520;--black:#151210;
+  --orange:#e8590c;--orange-dim:#c2410c;--orange-soft:rgba(232,89,12,.06);--orange-glow:rgba(232,89,12,.1);
+  --green:#16a34a;--green-soft:rgba(22,163,74,.06);
+  --red:#dc2626;--red-soft:rgba(220,38,38,.06);
+  --blue:#2563eb;--blue-soft:rgba(37,99,235,.06);
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Sora',sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--orange);color:#fff}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+section,header,footer,nav,main{position:relative;z-index:1}
+a{color:var(--orange);text-decoration:none}a:hover{color:var(--bright)}
+
+.container{max-width:780px;margin:0 auto;padding:0 28px}
+
+/* ─── Nav ─── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;background:rgba(250,249,247,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--black);letter-spacing:.1em;display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-icon{width:18px;height:18px;border:2px solid var(--orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--orange);font-weight:700;line-height:1}
+.nav-right{display:flex;gap:12px;align-items:center}
+.nav-link{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.04em;text-decoration:none;transition:color .2s}
+.nav-link:hover{color:var(--bright)}
+.nav-badge{font-family:var(--mono);font-size:8px;padding:3px 8px;border:1px solid var(--orange);color:var(--orange);border-radius:4px;letter-spacing:.06em}
+
+/* ─── Hero ─── */
+.hero{padding:160px 0 80px;text-align:center;position:relative}
+.hero-tag{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.25em;color:var(--dim);margin-bottom:28px;opacity:0;animation:fi .5s ease forwards .2s}
+.hero h1{font-family:var(--serif);font-size:clamp(44px,7vw,76px);font-weight:400;color:var(--black);line-height:1.08;letter-spacing:-.02em;margin-bottom:20px;opacity:0;animation:fu .7s ease forwards .3s}
+.hero h1 em{font-style:italic;color:var(--orange)}
+.hero-sub{font-size:16px;color:var(--text);max-width:520px;margin:0 auto 36px;line-height:1.7;opacity:0;animation:fu .6s ease forwards .45s}
+.hero-install{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--bright);padding:10px 20px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);cursor:pointer;transition:all .2s;opacity:0;animation:fu .5s ease forwards .6s}
+.hero-install:hover{border-color:var(--orange);color:var(--orange);box-shadow:0 2px 16px var(--orange-glow)}
+.hero-install .cp{font-size:8px;color:var(--dim);border:1px solid var(--border);padding:1px 6px;border-radius:3px}
+
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Sections ─── */
+section{padding:60px 0;border-top:1px solid var(--border)}
+section h2{font-family:var(--serif);font-size:32px;font-weight:400;color:var(--black);letter-spacing:-.01em;margin-bottom:8px}
+section h2 em{font-style:italic;color:var(--orange)}
+section p{font-size:14.5px;color:var(--text);margin-bottom:16px;line-height:1.75}
+section p code{font-family:var(--mono);font-size:11px;background:var(--bg2);padding:2px 6px;border-radius:4px;border:1px solid var(--border);color:var(--bright)}
+
+/* ─── Comparison demo ─── */
+.cmp-demo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0 28px}
+.cmp-col{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.cmp-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.cmp-label{font-family:var(--mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.cmp-label.bad{color:var(--red)}.cmp-label.good{color:var(--green)}
+.cmp-tag{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:3px;letter-spacing:.04em}
+.cmp-canvas{padding:16px;min-height:260px;background:#1a1a24;position:relative}
+
+/* Blind output */
+.blind-rect{position:absolute;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.blind-text{position:absolute;font-family:Arial,sans-serif;color:rgba(255,255,255,.5)}
+
+/* Smart output */
+.smart-frame{position:absolute;border-radius:6px;overflow:hidden}
+.smart-nav{left:12px;top:12px;right:12px;height:32px;background:#1f1f2e;border-radius:6px;display:flex;align-items:center;padding:0 10px;gap:6px}
+.smart-nav .logo-sq{width:12px;height:12px;border-radius:3px;background:#6366f1}
+.smart-nav .nav-txt{font-size:7px;color:#aaa;font-weight:600}
+.smart-nav .nav-links{display:flex;gap:4px;margin-left:auto}
+.smart-nav .nav-links span{width:20px;height:3px;border-radius:2px;background:#2a2a3e}
+
+.smart-hero-area{left:12px;top:52px;right:12px;padding:14px;background:#16162a;border-radius:6px}
+.smart-hero-area h4{font-size:14px;font-weight:700;color:#ededf8;line-height:1.15;margin-bottom:4px;letter-spacing:-.01em}
+.smart-hero-area p{font-size:7px;color:#7070a0;line-height:1.5;margin:0 0 8px}
+.smart-hero-area .btn-row{display:flex;gap:4px}
+.smart-hero-area .s-btn{padding:3px 10px;border-radius:4px;font-size:7px;font-weight:600}
+.smart-hero-area .s-btn.primary{background:#6366f1;color:#fff}
+.smart-hero-area .s-btn.secondary{background:transparent;border:1px solid #3a3a5a;color:#9090b0}
+
+.smart-cards{left:12px;right:12px;top:168px;display:flex;gap:6px}
+.smart-card{flex:1;background:#16162a;border-radius:6px;padding:8px}
+.smart-card h5{font-size:6px;font-weight:600;color:#7070a0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.smart-card .val{font-family:var(--mono);font-size:13px;font-weight:700;color:#ededf8}
+.smart-card .bar{height:3px;border-radius:2px;background:linear-gradient(90deg,#6366f1,#818cf8);margin-top:4px}
+
+/* Grid overlay on smart side */
+.grid-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s}
+.grid-overlay.show{opacity:1}
+.grid-overlay .g-line{position:absolute;background:rgba(232,89,12,.12)}
+.grid-overlay .g-label{position:absolute;font-family:var(--mono);font-size:6px;color:var(--orange);opacity:.7}
+
+/* Annotation tags */
+.anno{position:absolute;font-family:var(--mono);font-size:6.5px;padding:2px 5px;border-radius:3px;white-space:nowrap;opacity:0;transition:all .3s}
+.anno.show{opacity:1}
+.anno-orange{background:var(--orange-soft);color:var(--orange);border:1px solid rgba(232,89,12,.2)}
+.anno-green{background:var(--green-soft);color:var(--green);border:1px solid rgba(22,163,74,.2)}
+.anno-blue{background:var(--blue-soft);color:var(--blue);border:1px solid rgba(37,99,235,.2)}
+
+/* ─── Steps ─── */
+.step-row{display:flex;gap:8px;margin:20px 0 24px}
+.step{flex:1;text-align:center;padding:20px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.step .num{font-family:var(--serif);font-size:28px;font-weight:400;font-style:italic;color:var(--orange);margin-bottom:2px}
+.step h4{font-size:12px;font-weight:600;color:var(--bright);margin-bottom:3px}
+.step p{font-size:10px;color:var(--dim);line-height:1.5;margin:0}
+
+/* ─── Feature grid ─── */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 20px}
+.feat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 14px}
+.feat h4{font-family:var(--mono);font-size:10px;color:var(--bright);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.feat h4 .ic{font-size:13px;color:var(--orange)}
+.feat p{font-size:10.5px;color:var(--dim);line-height:1.55;margin:0}
+
+/* ─── Code ─── */
+pre{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;overflow-x:auto;margin:0 0 16px;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--text)}
+pre .kw{color:var(--orange);font-weight:500}
+pre .str{color:var(--green)}
+pre .cmt{color:var(--dim);font-style:italic}
+
+/* ─── Comparison table ─── */
+.cmp-table{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 20px}
+.cmp-t-col{border:1px solid var(--border);border-radius:10px;padding:18px;background:var(--surface)}
+.cmp-t-col h4{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.cmp-t-col.old h4{color:var(--red)}
+.cmp-t-col.new h4{color:var(--green)}
+.cmp-item{font-size:11px;color:var(--dim);padding:4px 0;display:flex;align-items:center;gap:6px;line-height:1.5}
+.cmp-item .x{color:var(--red);font-size:10px}.cmp-item .check{color:var(--green);font-size:10px}
+
+/* ─── Tools Grid ─── */
+.tools-grid{display:flex;flex-direction:column;gap:10px;margin:20px 0}
+.tool-category{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tool-cat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.tool-cat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.tool-cat-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--bright);text-transform:uppercase;letter-spacing:.06em}
+.tool-cat-desc{font-size:10px;color:var(--dim);margin-top:1px}
+.tool-list{padding:6px 8px}
+.tool{display:flex;align-items:baseline;gap:8px;padding:5px 8px;border-radius:4px;transition:background .12s}
+.tool:hover{background:var(--bg2)}
+.tool-name{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--bright);white-space:nowrap;min-width:160px;flex-shrink:0}
+.tool-desc{font-size:10px;color:var(--dim);line-height:1.5}
+
+/* ─── Footer ─── */
+footer{border-top:1px solid var(--border);padding:40px 0;text-align:center}
+footer p{color:var(--dim);font-size:11px;font-family:var(--mono)}
+
+@media(max-width:700px){.cmp-demo,.cmp-table{grid-template-columns:1fr}.container{padding:0 16px}.hero{padding:130px 0 60px}.feat-grid{grid-template-columns:1fr}.step-row{flex-direction:column}.tool-name{min-width:120px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#" class="nav-logo"><div class="nav-icon">⊞</div>CONDUCTOR</a>
+  <div class="nav-right">
+    <a href="#demo" class="nav-link">Demo</a>
+    <a href="#how" class="nav-link">How it works</a>
+    <a href="#setup" class="nav-link">Setup</a>
+    <span class="nav-badge">MCP</span>
+  </div>
+</nav>
+
+<div class="container">
+
+<section class="hero" style="border:none">
+  <div class="hero-tag">MCP Server for Figma</div>
+  <h1>It doesn't place shapes.<br>It <em>designs.</em></h1>
+  <p class="hero-sub">CONDUCTOR is an MCP server with 61 design-intelligent tools. 8px grid. Type scale ratios. Auto-layout. Component reuse. Accessibility baked in. When you say "create a pricing page," it builds one that a designer would approve.</p>
+  <div class="hero-install" onclick="copyInstall()">
+    <span>npx conductor-figma</span>
+    <span class="cp" id="cpTag">copy</span>
+  </div>
+</section>
+
+<!-- Side-by-side Demo -->
+<section id="demo">
+  <h2>Same prompt. <em>Different intelligence.</em></h2>
+  <p>"Create a SaaS landing page with a hero section, feature cards, and navigation." One prompt, two very different results. Click <strong>Generate</strong> to see both.</p>
+
+  <div class="cmp-demo">
+    <!-- Blind MCP -->
+    <div class="cmp-col">
+      <div class="cmp-header">
+        <span class="cmp-label bad">Typical MCP</span>
+        <span class="cmp-tag" style="background:var(--red-soft);color:var(--red)">blind</span>
+      </div>
+      <div class="cmp-canvas" id="blindCanvas">
+        <div style="font-family:var(--mono);font-size:8px;color:#505060;text-align:center;padding-top:100px" id="blindEmpty">Click "Generate" to compare</div>
+      </div>
+    </div>
+
+    <!-- CONDUCTOR -->
+    <div class="cmp-col">
+      <div class="cmp-header">
+        <span class="cmp-label good">CONDUCTOR</span>
+        <span class="cmp-tag" style="background:var(--green-soft);color:var(--green)">intelligent</span>
+      </div>
+      <div class="cmp-canvas" id="smartCanvas" style="position:relative">
+        <div style="font-family:var(--mono);font-size:8px;color:#505060;text-align:center;padding-top:100px" id="smartEmpty">Click "Generate" to compare</div>
+
+        <!-- Smart output (hidden initially) -->
+        <div id="smartOutput" style="display:none">
+          <div class="smart-frame smart-nav">
+            <div class="logo-sq"></div>
+            <span class="nav-txt">acme</span>
+            <div class="nav-links"><span></span><span></span><span></span></div>
+          </div>
+          <div class="smart-frame smart-hero-area" style="position:absolute">
+            <h4>Ship faster with<br>less overhead</h4>
+            <p>The platform for teams that move fast.</p>
+            <div class="btn-row"><span class="s-btn primary">Get started</span><span class="s-btn secondary">Learn more</span></div>
+          </div>
+          <div class="smart-frame smart-cards" style="position:absolute">
+            <div class="smart-card"><h5>Revenue</h5><div class="val">$48k</div><div class="bar" style="width:75%"></div></div>
+            <div class="smart-card"><h5>Users</h5><div class="val">2.4k</div><div class="bar" style="width:55%"></div></div>
+            <div class="smart-card"><h5>Growth</h5><div class="val">+18%</div><div class="bar" style="width:40%"></div></div>
+          </div>
+        </div>
+
+        <!-- Grid overlay -->
+        <div class="grid-overlay" id="gridOverlay">
+          <div class="g-line" style="left:12px;top:0;width:1px;height:100%"></div>
+          <div class="g-line" style="right:12px;top:0;width:1px;height:100%"></div>
+          <div class="g-line" style="left:0;top:12px;height:1px;width:100%"></div>
+          <div class="g-line" style="left:0;top:44px;height:1px;width:100%"></div>
+          <div class="g-line" style="left:0;top:52px;height:1px;width:100%"></div>
+          <div class="g-line" style="left:0;top:160px;height:1px;width:100%"></div>
+        </div>
+
+        <!-- Annotations -->
+        <div class="anno anno-orange" id="annoGrid" style="right:4px;top:4px">8px grid ✓</div>
+        <div class="anno anno-green" id="annoAuto" style="left:4px;bottom:48px">auto-layout</div>
+        <div class="anno anno-blue" id="annoScale" style="right:4px;top:64px">1.25 type scale</div>
+        <div class="anno anno-orange" id="annoSpace" style="left:4px;top:156px">consistent 8px gap</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:-8px">
+    <button id="genBtn" onclick="runDemo()" style="font-family:var(--mono);font-size:11px;font-weight:600;padding:10px 28px;border:1px solid var(--orange);border-radius:8px;background:var(--orange-soft);color:var(--orange);cursor:pointer;letter-spacing:.04em;transition:all .2s">⊞ Generate</button>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how">
+  <h2>Design rules, <em>not rectangles</em></h2>
+  <p>CONDUCTOR doesn't translate your words into shapes. It translates them into design decisions. Every element it creates follows the rules a senior designer would apply instinctively.</p>
+  <div class="step-row">
+    <div class="step"><div class="num">1</div><h4>Parse intent</h4><p>Understands "pricing page" means comparison layout, feature tiers, CTA hierarchy.</p></div>
+    <div class="step"><div class="num">2</div><h4>Read context</h4><p>Scans your existing Figma file for styles, components, tokens, and grid settings.</p></div>
+    <div class="step"><div class="num">3</div><h4>Apply rules</h4><p>8px grid. Type scale ratios. Proper auto-layout constraints. Component reuse.</p></div>
+    <div class="step"><div class="num">4</div><h4>Generate</h4><p>Creates Figma frames with proper structure, not absolute-positioned rectangles.</p></div>
+  </div>
+</section>
+
+<!-- What it knows -->
+<section>
+  <h2>Design intelligence, <em>built in</em></h2>
+  <div class="feat-grid">
+    <div class="feat"><h4><span class="ic">⊞</span> 8px grid</h4><p>Every spacing value is a multiple of 8. Padding, margins, gaps. No arbitrary numbers.</p></div>
+    <div class="feat"><h4><span class="ic">◆</span> Type scale</h4><p>Picks sizes from a ratio (1.2, 1.25, 1.333). Headings, body, captions all relate mathematically.</p></div>
+    <div class="feat"><h4><span class="ic">▤</span> Auto-layout</h4><p>Every frame uses Figma auto-layout with proper padding, gap, and alignment. Zero absolute positioning.</p></div>
+    <div class="feat"><h4><span class="ic">◎</span> Component reuse</h4><p>Reads your existing components library. Uses your buttons, cards, and inputs instead of creating new ones.</p></div>
+    <div class="feat"><h4><span class="ic">◧</span> Style tokens</h4><p>References your defined color styles, text styles, and effect styles. Stays on-brand automatically.</p></div>
+    <div class="feat"><h4><span class="ic">◑</span> Hierarchy</h4><p>Understands visual weight. Primary actions are prominent. Secondary content recedes. Information flows correctly.</p></div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section>
+  <h2>Blind proxy vs. <em>design agent</em></h2>
+  <div class="cmp-table">
+    <div class="cmp-t-col old">
+      <h4>Typical MCP</h4>
+      <div class="cmp-item"><span class="x">✗</span> Absolute positioning for everything</div>
+      <div class="cmp-item"><span class="x">✗</span> Random font sizes (18px, 22px, 37px)</div>
+      <div class="cmp-item"><span class="x">✗</span> Arbitrary spacing (13px, 27px, 41px)</div>
+      <div class="cmp-item"><span class="x">✗</span> Creates new colors from scratch</div>
+      <div class="cmp-item"><span class="x">✗</span> Ignores existing components</div>
+      <div class="cmp-item"><span class="x">✗</span> No auto-layout, no constraints</div>
+    </div>
+    <div class="cmp-t-col new">
+      <h4>CONDUCTOR</h4>
+      <div class="cmp-item"><span class="check">✓</span> Auto-layout with proper constraints</div>
+      <div class="cmp-item"><span class="check">✓</span> Type scale: 12, 14, 16, 20, 24, 32</div>
+      <div class="cmp-item"><span class="check">✓</span> 8px grid: 8, 16, 24, 32, 40, 48</div>
+      <div class="cmp-item"><span class="check">✓</span> Uses your existing color tokens</div>
+      <div class="cmp-item"><span class="check">✓</span> Instantiates your components</div>
+      <div class="cmp-item"><span class="check">✓</span> Full auto-layout tree, responsive</div>
+    </div>
+  </div>
+</section>
+
+<!-- MCP Tools -->
+<section>
+  <h2>61 tools. <em>Zero compromises.</em></h2>
+  <p>Every tool a design-aware AI needs to create, edit, audit, and ship production-quality Figma designs. Organized by what you're trying to do.</p>
+
+  <div class="tools-grid">
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:var(--orange-soft);color:var(--orange)">⊞</span>
+        <div><div class="tool-cat-title">Create</div><div class="tool-cat-desc">Build new frames with design intelligence</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">create_frame</span><span class="tool-desc">Create auto-layout frame with grid-aligned spacing</span></div>
+        <div class="tool"><span class="tool-name">create_page</span><span class="tool-desc">Full page from intent: landing, pricing, dashboard, settings</span></div>
+        <div class="tool"><span class="tool-name">create_section</span><span class="tool-desc">Hero, features, testimonials, FAQ, CTA — pattern-aware</span></div>
+        <div class="tool"><span class="tool-name">create_card</span><span class="tool-desc">Card with proper padding, radius, shadow, content hierarchy</span></div>
+        <div class="tool"><span class="tool-name">create_form</span><span class="tool-desc">Form layout: labels, inputs, validation states, submit flow</span></div>
+        <div class="tool"><span class="tool-name">create_table</span><span class="tool-desc">Data table with header, rows, sorting indicators, pagination</span></div>
+        <div class="tool"><span class="tool-name">create_modal</span><span class="tool-desc">Modal with overlay, close behavior, responsive content area</span></div>
+        <div class="tool"><span class="tool-name">create_nav</span><span class="tool-desc">Navigation: topbar, sidebar, breadcrumbs, tabs — with active states</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:var(--green-soft);color:var(--green)">▤</span>
+        <div><div class="tool-cat-title">Layout</div><div class="tool-cat-desc">Auto-layout, grids, and spatial structure</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">layout_auto</span><span class="tool-desc">Convert any frame to auto-layout with inferred direction and gap</span></div>
+        <div class="tool"><span class="tool-name">layout_grid</span><span class="tool-desc">Apply column grid: 12-col, 8-col, or custom with gutters</span></div>
+        <div class="tool"><span class="tool-name">layout_stack</span><span class="tool-desc">Stack children vertically or horizontally with consistent spacing</span></div>
+        <div class="tool"><span class="tool-name">layout_wrap</span><span class="tool-desc">Wrap-layout for tag clouds, pill groups, flexible card grids</span></div>
+        <div class="tool"><span class="tool-name">layout_constrain</span><span class="tool-desc">Set responsive constraints: fill, hug, fixed, min/max width</span></div>
+        <div class="tool"><span class="tool-name">layout_align</span><span class="tool-desc">Align and distribute selected frames on the grid</span></div>
+        <div class="tool"><span class="tool-name">layout_nest</span><span class="tool-desc">Restructure flat layers into a proper auto-layout tree</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:var(--blue-soft);color:var(--blue)">◆</span>
+        <div><div class="tool-cat-title">Typography</div><div class="tool-cat-desc">Type scales, pairing, and text intelligence</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">type_scale</span><span class="tool-desc">Generate or detect type scale: minor third, major third, perfect fourth</span></div>
+        <div class="tool"><span class="tool-name">type_hierarchy</span><span class="tool-desc">Set heading levels with proper size, weight, and line-height ratios</span></div>
+        <div class="tool"><span class="tool-name">type_pair</span><span class="tool-desc">Suggest font pairings from your loaded fonts or Google Fonts</span></div>
+        <div class="tool"><span class="tool-name">type_measure</span><span class="tool-desc">Check line length (45-75 chars), line-height, letter-spacing</span></div>
+        <div class="tool"><span class="tool-name">type_apply</span><span class="tool-desc">Apply text styles to all matching elements across frames</span></div>
+        <div class="tool"><span class="tool-name">type_audit</span><span class="tool-desc">Find every unique text style in a page, flag off-scale sizes</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(168,85,247,.06);color:#a855f7">◑</span>
+        <div><div class="tool-cat-title">Color & Style</div><div class="tool-cat-desc">Tokens, themes, and visual consistency</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">color_palette</span><span class="tool-desc">Generate full palette from a single brand color: 50-950 shades</span></div>
+        <div class="tool"><span class="tool-name">color_semantic</span><span class="tool-desc">Create semantic tokens: surface, text, border, accent, danger, success</span></div>
+        <div class="tool"><span class="tool-name">color_darkmode</span><span class="tool-desc">Generate dark mode variant of any frame, preserving contrast ratios</span></div>
+        <div class="tool"><span class="tool-name">color_contrast</span><span class="tool-desc">Check WCAG contrast for all text/background pairs in a frame</span></div>
+        <div class="tool"><span class="tool-name">color_apply</span><span class="tool-desc">Apply color styles to elements by role: primary, secondary, muted</span></div>
+        <div class="tool"><span class="tool-name">style_shadow</span><span class="tool-desc">Generate elevation system: sm, md, lg, xl with consistent blur/spread</span></div>
+        <div class="tool"><span class="tool-name">style_radius</span><span class="tool-desc">Apply consistent border-radius scale across all frames</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(236,72,153,.06);color:#ec4899">◎</span>
+        <div><div class="tool-cat-title">Components</div><div class="tool-cat-desc">Reuse, instantiate, and manage your library</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">component_list</span><span class="tool-desc">List all components in the current file or team library</span></div>
+        <div class="tool"><span class="tool-name">component_use</span><span class="tool-desc">Instantiate a component by name with variant props set</span></div>
+        <div class="tool"><span class="tool-name">component_create</span><span class="tool-desc">Create a new component from a frame with proper variant structure</span></div>
+        <div class="tool"><span class="tool-name">component_swap</span><span class="tool-desc">Swap one component instance for another across a frame</span></div>
+        <div class="tool"><span class="tool-name">component_detach</span><span class="tool-desc">Detach instances and flatten to editable frames</span></div>
+        <div class="tool"><span class="tool-name">component_audit</span><span class="tool-desc">Find detached instances, missing components, and unused variants</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(34,211,238,.06);color:#22d3ee">◧</span>
+        <div><div class="tool-cat-title">Spacing & Grid</div><div class="tool-cat-desc">Consistent rhythm and spatial harmony</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">spacing_scale</span><span class="tool-desc">Define base unit (4px/8px) and generate full spacing scale</span></div>
+        <div class="tool"><span class="tool-name">spacing_fix</span><span class="tool-desc">Snap all off-grid spacing values to the nearest scale value</span></div>
+        <div class="tool"><span class="tool-name">spacing_audit</span><span class="tool-desc">Report every spacing value in a frame, flag inconsistencies</span></div>
+        <div class="tool"><span class="tool-name">spacing_rhythm</span><span class="tool-desc">Check vertical rhythm: are section gaps consistent and proportional?</span></div>
+        <div class="tool"><span class="tool-name">grid_apply</span><span class="tool-desc">Apply layout grid to a frame: columns, rows, or custom</span></div>
+        <div class="tool"><span class="tool-name">grid_check</span><span class="tool-desc">Verify all children align to the parent grid</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(251,191,36,.06);color:#fbbf24">◉</span>
+        <div><div class="tool-cat-title">Audit & Critique</div><div class="tool-cat-desc">Find issues before they ship</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">audit_full</span><span class="tool-desc">Full design audit: spacing, type, color, components, accessibility</span></div>
+        <div class="tool"><span class="tool-name">audit_hierarchy</span><span class="tool-desc">Check visual hierarchy: are primary elements dominant?</span></div>
+        <div class="tool"><span class="tool-name">audit_consistency</span><span class="tool-desc">Find elements that look similar but use different styles</span></div>
+        <div class="tool"><span class="tool-name">audit_alignment</span><span class="tool-desc">Flag misaligned elements, uneven margins, off-center content</span></div>
+        <div class="tool"><span class="tool-name">audit_density</span><span class="tool-desc">Check information density: too cramped or too sparse?</span></div>
+        <div class="tool"><span class="tool-name">audit_score</span><span class="tool-desc">0-100 design health score with per-category breakdown</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(16,185,129,.06);color:#10b981">♿</span>
+        <div><div class="tool-cat-title">Accessibility</div><div class="tool-cat-desc">WCAG compliance built into every decision</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">a11y_contrast</span><span class="tool-desc">Check all text/background pairs against WCAG AA and AAA</span></div>
+        <div class="tool"><span class="tool-name">a11y_touch</span><span class="tool-desc">Verify touch targets meet 44x44px minimum</span></div>
+        <div class="tool"><span class="tool-name">a11y_focus</span><span class="tool-desc">Generate focus ring styles for all interactive elements</span></div>
+        <div class="tool"><span class="tool-name">a11y_labels</span><span class="tool-desc">Check for missing labels on inputs, buttons, icons</span></div>
+        <div class="tool"><span class="tool-name">a11y_fix</span><span class="tool-desc">Auto-fix: bump contrast, enlarge targets, add focus states</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(99,102,241,.06);color:#6366f1">↔</span>
+        <div><div class="tool-cat-title">Responsive</div><div class="tool-cat-desc">Multi-breakpoint design intelligence</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">responsive_variant</span><span class="tool-desc">Generate mobile, tablet, desktop variants of any frame</span></div>
+        <div class="tool"><span class="tool-name">responsive_reflow</span><span class="tool-desc">Reflow a desktop layout into mobile: stack columns, resize type</span></div>
+        <div class="tool"><span class="tool-name">responsive_breakpoints</span><span class="tool-desc">Set up breakpoint frames: 375, 768, 1024, 1440</span></div>
+        <div class="tool"><span class="tool-name">responsive_check</span><span class="tool-desc">Verify text doesn't overflow and touch targets remain accessible</span></div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <div class="tool-cat-header">
+        <span class="tool-cat-icon" style="background:rgba(245,158,11,.06);color:#f59e0b">⤓</span>
+        <div><div class="tool-cat-title">Export & Handoff</div><div class="tool-cat-desc">Ship design decisions as code</div></div>
+      </div>
+      <div class="tool-list">
+        <div class="tool"><span class="tool-name">export_tokens_css</span><span class="tool-desc">Export all tokens as CSS custom properties</span></div>
+        <div class="tool"><span class="tool-name">export_tokens_tailwind</span><span class="tool-desc">Export as tailwind.config.js theme extension</span></div>
+        <div class="tool"><span class="tool-name">export_tokens_json</span><span class="tool-desc">Export as W3C Design Tokens format JSON</span></div>
+        <div class="tool"><span class="tool-name">export_tokens_scss</span><span class="tool-desc">Export as SCSS variables and maps</span></div>
+        <div class="tool"><span class="tool-name">export_spec</span><span class="tool-desc">Generate design spec: measurements, tokens, component annotations</span></div>
+        <div class="tool"><span class="tool-name">export_changelog</span><span class="tool-desc">Diff two frames and export what changed as structured markdown</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin:24px 0 8px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.06em">61 TOOLS · 10 CATEGORIES · ZERO DEPENDENCIES</div>
+  </div>
+</section>
+
+<!-- Setup -->
+<section id="setup">
+  <h2>Setup</h2>
+<pre><span class="cmt">// ~/.cursor/mcp.json</span>
+{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"conductor"</span>: {
+      <span class="str">"command"</span>: <span class="str">"npx"</span>,
+      <span class="str">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"conductor-figma"</span>]
+    }
+  }
+}</pre>
+  <p>Install the CONDUCTOR plugin from the Figma Community. Open your Figma file, run the plugin, then chat:</p>
+<pre><span class="str">"Create a pricing page with three tiers"</span>
+
+<span class="str">"Add a testimonial section using my existing card component"</span>
+
+<span class="str">"Convert this frame to auto-layout with 8px spacing"</span>
+
+<span class="str">"Audit this page — is my spacing consistent?"</span></pre>
+</section>
+
+<section>
+  <h2>Disclaimer</h2>
+  <p>Experimental, open-source software. Provided as-is with no warranties. DYOR. Use at your own risk. Built by 0xDragoon.</p>
+</section>
+
+<footer><p>CONDUCTOR · Design-intelligent MCP server · MIT · Built by 0xDragoon</p></footer>
+</div>
+
+<script>
+let demoRan = false;
+
+function runDemo() {
+  if (demoRan) return;
+  demoRan = true;
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('genBtn').style.opacity = '.4';
+
+  // ─── Blind side: ugly random rectangles ───
+  const blind = document.getElementById('blindCanvas');
+  document.getElementById('blindEmpty').style.display = 'none';
+
+  const blindElements = [
+    { x:15, y:10, w:200, h:18, text:'Navigation Bar', fs:9, fw:'bold' },
+    { x:15, y:45, w:180, h:60, bg:true },
+    { x:15, y:50, w:150, h:14, text:'Welcome to Our Platform', fs:11, fw:'bold' },
+    { x:15, y:68, w:100, h:7, text:'Lorem ipsum dolor sit', fs:6 },
+    { x:15, y:82, w:55, h:15, bg:true, color:'#6366f1' },
+    { x:15, y:85, w:50, h:9, text:'Sign Up', fs:7, color:'#fff' },
+    { x:15, y:115, w:60, h:45, bg:true },
+    { x:80, y:115, w:60, h:45, bg:true },
+    { x:145, y:115, w:60, h:45, bg:true },
+    { x:20, y:120, w:40, h:7, text:'Feature 1', fs:7 },
+    { x:85, y:120, w:40, h:7, text:'Feature 2', fs:7 },
+    { x:150, y:120, w:40, h:7, text:'Feature 3', fs:7 },
+    { x:15, y:175, w:200, h:12, bg:true },
+    { x:20, y:177, w:60, h:6, text:'Footer text here', fs:5 },
+  ];
+
+  blindElements.forEach((el, i) => {
+    setTimeout(() => {
+      if (el.bg) {
+        const div = document.createElement('div');
+        div.className = 'blind-rect';
+        div.style.cssText = `left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;${el.color ? `background:${el.color}` : ''}`;
+        blind.appendChild(div);
+      }
+      if (el.text) {
+        const span = document.createElement('div');
+        span.className = 'blind-text';
+        span.style.cssText = `left:${el.x}px;top:${el.y}px;font-size:${el.fs}px;${el.fw ? 'font-weight:'+el.fw+';' : ''}${el.color ? 'color:'+el.color+';' : ''}`;
+        span.textContent = el.text;
+        blind.appendChild(span);
+      }
+    }, i * 80);
+  });
+
+  // Problem annotations on blind side
+  setTimeout(() => {
+    const problems = [
+      { x:110, y:42, text:'13px gap ??' },
+      { x:72, y:82, text:'misaligned' },
+      { x:145, y:108, text:'27px gap ??' },
+    ];
+    problems.forEach((p, i) => {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.style.cssText = `position:absolute;left:${p.x}px;top:${p.y}px;font-family:var(--mono);font-size:6px;color:${getComputedStyle(document.documentElement).getPropertyValue('--red').trim()};background:rgba(220,38,38,.1);padding:1px 4px;border-radius:2px;border:1px solid rgba(220,38,38,.15);opacity:0;transition:opacity .3s`;
+        el.textContent = p.text;
+        blind.appendChild(el);
+        requestAnimationFrame(() => el.style.opacity = '1');
+      }, i * 200 + 400);
+    });
+  }, blindElements.length * 80);
+
+  // ─── Smart side: proper design ───
+  setTimeout(() => {
+    document.getElementById('smartEmpty').style.display = 'none';
+    document.getElementById('smartOutput').style.display = 'block';
+
+    // Show grid overlay
+    setTimeout(() => {
+      document.getElementById('gridOverlay').classList.add('show');
+    }, 400);
+
+    // Show annotations
+    const annos = ['annoGrid', 'annoAuto', 'annoScale', 'annoSpace'];
+    annos.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('show');
+      }, 800 + i * 300);
+    });
+  }, 600);
+}
+
+function copyInstall() {
+  navigator.clipboard?.writeText('npx conductor-figma').then(() => {
+    const t = document.getElementById('cpTag');
+    if (t) { t.textContent = 'copied!'; t.style.color = 'var(--orange)'; setTimeout(() => { t.textContent = 'copy'; t.style.color = ''; }, 1500); }
+  });
+}
+</script>
+</body>
+</html>
