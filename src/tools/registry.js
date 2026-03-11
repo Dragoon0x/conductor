@@ -5,9 +5,10 @@
 // Each tool has: name, description, category, inputSchema, handler reference.
 
 export const CATEGORIES = {
-  create:       { label: 'Create',          icon: '⊞', count: 8 },
+  craft:        { label: 'Design Craft',   icon: '✦', count: 1 },
+  create:       { label: 'Create',          icon: '⊞', count: 12 },
   layout:       { label: 'Layout',          icon: '▤', count: 7 },
-  typography:   { label: 'Typography',      icon: '◆', count: 6 },
+  typography:   { label: 'Typography',      icon: '◆', count: 7 },
   color:        { label: 'Color & Style',   icon: '◑', count: 7 },
   components:   { label: 'Components',      icon: '◎', count: 6 },
   spacing:      { label: 'Spacing & Grid',  icon: '◧', count: 6 },
@@ -277,6 +278,33 @@ export const TOOLS = [
   { name: 'export_changelog', category: 'export',
     description: 'Diff two frames and export what changed as structured markdown or JSON.',
     inputSchema: { type: 'object', properties: { nodeIdA: str('First frame (before)'), nodeIdB: str('Second frame (after)'), format: opt(str('markdown or json')) }, required: ['nodeIdA', 'nodeIdB'] } },
+
+  // ═══ DESIGN CRAFT ═══
+  { name: 'get_design_craft_guide', category: 'craft',
+    description: 'IMPORTANT: Call this FIRST before creating any design. Returns comprehensive professional design rules covering typography scales, spacing systems, color palettes, component patterns, layout architecture, and anti-patterns. Read and follow these rules to produce production-quality designs.',
+    inputSchema: { type: 'object', properties: {}, required: [] } },
+
+  // ═══ CREATE (additional) ═══
+  { name: 'create_ellipse', category: 'create',
+    description: 'Create a circle or oval. Use for avatars, status indicators, decorative elements, and icon backgrounds. Set equal width and height for a perfect circle.',
+    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), width: num('Width in px'), height: num('Height in px'), fill: opt(str('Fill color hex')), x: opt(num('X position')), y: opt(num('Y position')), parentId: opt(str('Parent frame ID')), opacity: opt(num('Opacity 0-1')) }, required: ['width', 'height'] } },
+
+  { name: 'create_line', category: 'create',
+    description: 'Create a horizontal or vertical line. Use for dividers between sections, separators in navigation, and visual breaks. A line is a rectangle with 1px height (horizontal) or 1px width (vertical).',
+    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), length: num('Length in px'), direction: opt(str('horizontal or vertical (default horizontal)')), color: opt(str('Line color hex')), parentId: opt(str('Parent frame ID')) }, required: ['length'] } },
+
+  { name: 'create_svg_node', category: 'create',
+    description: 'Create a vector graphic from raw SVG markup. Use for icons, logos, illustrations, and any custom vector shape. Pass the SVG string directly.',
+    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), svg: str('Raw SVG markup string'), x: opt(num('X position')), y: opt(num('Y position')), parentId: opt(str('Parent frame ID')) }, required: ['svg'] } },
+
+  { name: 'find_nodes', category: 'create',
+    description: 'Search for elements by name or type within a frame or the entire page. Returns matching nodes with their IDs, positions, and basic properties. Use to locate elements before editing them.',
+    inputSchema: { type: 'object', properties: { query: opt(str('Search by name (partial match)')), type: opt(str('Filter by type: FRAME, TEXT, RECTANGLE, ELLIPSE, COMPONENT, INSTANCE')), parentId: opt(str('Search within this frame only')) }, required: [] } },
+
+  // ═══ TYPOGRAPHY (additional) ═══
+  { name: 'style_text_range', category: 'typography',
+    description: 'Apply different styles to specific character ranges within a text node. Use for mixed-weight text (e.g., bold product name within a regular sentence), colored keywords, or size variations within a single text element.',
+    inputSchema: { type: 'object', properties: { nodeId: str('Text node ID'), start: num('Start character index'), end: num('End character index'), fontSize: opt(num('Font size for range')), fontWeight: opt(num('Font weight: 400, 500, 600, 700')), color: opt(str('Color hex for range')) }, required: ['nodeId', 'start', 'end'] } },
 ];
 
 export function getToolsByCategory(category) {

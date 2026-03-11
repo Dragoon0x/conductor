@@ -30,3 +30,4 @@ export {
 } from './design/intelligence.js';
 
 export { exportCSS, exportTailwind, exportSCSS, exportJSON, exportW3CTokens } from './design/exporter.js';
+export { getDesignCraftGuide } from './design/craftguide.js';

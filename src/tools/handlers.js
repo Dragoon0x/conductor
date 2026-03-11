@@ -6,6 +6,7 @@
 
 import * as design from '../design/intelligence.js';
 import * as exporter from '../design/exporter.js';
+import { getDesignCraftGuide } from '../design/craftguide.js';
 
 function text(str) {
   return { content: [{ type: 'text', text: str }] };
@@ -389,6 +390,68 @@ const HANDLERS = {
   },
   export_spec(args) { return json({ action: 'generate_spec', nodeId: args.nodeId, format: args.format || 'markdown' }); },
   export_changelog(args) { return json({ action: 'diff_frames', nodeIdA: args.nodeIdA, nodeIdB: args.nodeIdB, format: args.format || 'markdown' }); },
+
+  // ═══ DESIGN CRAFT ═══
+  get_design_craft_guide() {
+    return text(getDesignCraftGuide());
+  },
+
+  // ═══ CREATE (additional) ═══
+  create_ellipse(args) {
+    return json({
+      action: 'create_ellipse',
+      name: args.name || 'Ellipse',
+      width: args.width, height: args.height,
+      fill: args.fill || '#ffffff',
+      x: args.x, y: args.y,
+      parentId: args.parentId,
+      opacity: args.opacity,
+    });
+  },
+
+  create_line(args) {
+    var dir = args.direction || 'horizontal';
+    return json({
+      action: 'create_rect',
+      name: args.name || 'Divider',
+      width: dir === 'horizontal' ? args.length : 1,
+      height: dir === 'horizontal' ? 1 : args.length,
+      fill: args.color || '#1a1a32',
+      parentId: args.parentId,
+    });
+  },
+
+  create_svg_node(args) {
+    return json({
+      action: 'create_svg_node',
+      name: args.name || 'SVG',
+      svg: args.svg,
+      x: args.x, y: args.y,
+      parentId: args.parentId,
+    });
+  },
+
+  find_nodes(args) {
+    return json({
+      action: 'find_nodes',
+      query: args.query,
+      type: args.type,
+      parentId: args.parentId,
+    });
+  },
+
+  // ═══ TYPOGRAPHY (additional) ═══
+  style_text_range(args) {
+    return json({
+      action: 'style_text_range',
+      nodeId: args.nodeId,
+      start: args.start,
+      end: args.end,
+      fontSize: args.fontSize,
+      fontWeight: args.fontWeight,
+      color: args.color,
+    });
+  },
 };
 
 // ─── Helpers ───

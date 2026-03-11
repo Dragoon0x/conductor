@@ -15,15 +15,17 @@ import { createServer } from 'node:http';
 const FIGMA_COMMANDS = new Set([
   // Create
   'create_frame', 'create_text', 'create_rect', 'create_section', 'create_component',
+  'create_ellipse', 'create_svg_node',
   // Layout
   'set_auto_layout', 'set_constraints', 'apply_grid', 'align_nodes',
   // Style
   'set_fills', 'set_strokes', 'set_effects', 'set_corner_radius', 'set_opacity',
   // Typography
-  'set_text_props', 'load_font',
+  'set_text_props', 'load_font', 'style_text_range',
   // Read
   'get_selection', 'get_page_info', 'get_styles', 'get_components',
   'read_node', 'read_tree', 'read_spacing', 'read_colors', 'read_typography',
+  'find_nodes',
   // Edit
   'rename_node', 'move_node', 'resize_node', 'delete_node',
   'clone_node', 'group_nodes', 'ungroup_node', 'reorder_node',

@@ -214,18 +214,18 @@ assert(mixedScore > 0 && mixedScore < 100, 'Mixed scores produce mid-range resul
 
 console.log('\n  Tool Registry');
 
-assertEq(TOOLS.length, 61, `Registry has 61 tools (got ${TOOLS.length})`);
-assertEq(Object.keys(CATEGORIES).length, 10, '10 categories');
+assertEq(TOOLS.length, 67, `Registry has 61 tools (got ${TOOLS.length})`);
+assertEq(Object.keys(CATEGORIES).length, 11, '10 categories');
 
 assert(getToolByName('create_frame') !== undefined, 'Can find create_frame');
 assert(getToolByName('a11y_contrast') !== undefined, 'Can find a11y_contrast');
 assert(getToolByName('nonexistent') === undefined, 'Returns undefined for missing tool');
 
 const createTools = getToolsByCategory('create');
-assertEq(createTools.length, 8, '8 create tools');
+assertEq(createTools.length, 12, '8 create tools');
 
 const allNames = getAllToolNames();
-assertEq(allNames.length, 61, 'getAllToolNames returns 61');
+assertEq(allNames.length, 67, 'getAllToolNames returns 61');
 assert(allNames.includes('layout_auto'), 'Names include layout_auto');
 
 // Verify every tool has required fields
