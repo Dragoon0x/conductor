@@ -1,6 +1,6 @@
 {
   "name": "conductor-figma",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Design-intelligent MCP server for Figma. 61 tools across 10 categories. 8px grid, type scale ratios, auto-layout, component reuse, accessibility — real design intelligence, not shape proxying.",
   "author": "0xDragoon",
   "license": "MIT",
@@ -33,5 +33,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "optionalDependencies": {
+    "ws": "^8.0.0"
+  }
 }

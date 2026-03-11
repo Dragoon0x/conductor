@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 export { startServer } from './server.js';
+export { Relay } from './relay.js';
 export { TOOLS, CATEGORIES, getToolByName, getToolsByCategory, getAllToolNames } from './tools/registry.js';
 export { handleTool } from './tools/handlers.js';
 
