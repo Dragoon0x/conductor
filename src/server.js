@@ -72,8 +72,21 @@ async function handleMessage(msg) {
       break;
 
     case 'tools/list':
+      // Only expose high-level tools to Cursor.
+      // Low-level Figma commands (create_frame, create_text, etc.) are hidden
+      // because the orchestrator uses them internally via blueprints.
+      var HIDDEN_FROM_AI = new Set([
+        'create_frame', 'create_text', 'create_rect', 'create_ellipse', 'create_line',
+        'create_svg_node', 'create_card', 'create_form', 'create_table', 'create_modal', 'create_nav',
+        'layout_auto', 'layout_grid', 'layout_stack', 'layout_wrap', 'layout_constrain', 'layout_align', 'layout_nest',
+        'set_fills', 'set_strokes', 'set_effects', 'set_corner_radius', 'set_opacity',
+        'set_text_props', 'load_font', 'style_text_range',
+        'rename_node', 'move_node', 'resize_node', 'delete_node', 'clone_node', 'group_nodes', 'ungroup_node', 'reorder_node',
+        'find_nodes',
+      ]);
+      var visibleTools = TOOLS.filter(function(t) { return !HIDDEN_FROM_AI.has(t.name); });
       sendResult(id, {
-        tools: TOOLS.map(function(t) { return { name: t.name, description: t.description, inputSchema: t.inputSchema }; }),
+        tools: visibleTools.map(function(t) { return { name: t.name, description: t.description, inputSchema: t.inputSchema }; }),
       });
       break;
 
