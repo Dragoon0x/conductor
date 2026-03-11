@@ -10,17 +10,18 @@ if (args.includes('--help') || args.includes('-h')) {
   ⊞ CONDUCTOR — Design-intelligent MCP server for Figma
 
   Usage:
-    conductor-figma                Start MCP server + Figma relay
+    conductor-figma                Start MCP server + orchestrator
     conductor-figma --port 9800    Set WebSocket port (default: 9800)
     conductor-figma --list         List all ${TOOLS.length} tools
     conductor-figma --categories   Show tool categories
     conductor-figma --help         Show this help
 
   How it works:
-    1. Cursor sends tool calls via MCP (stdio)
-    2. Design tools (color, type, spacing) resolve locally
-    3. Figma tools forward through WebSocket to the plugin
-    4. Plugin executes on canvas, results flow back
+    1. You say "create a pricing page" in Cursor
+    2. CONDUCTOR generates a blueprint (30-50 commands)
+    3. Each command executes sequentially on your Figma canvas
+    4. Frames, text, cards, buttons appear in real-time
+    5. All auto-layout. All grid-aligned. All design-intelligent.
 
   Setup:
     ~/.cursor/mcp.json:

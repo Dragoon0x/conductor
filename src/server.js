@@ -1,19 +1,24 @@
 // ═══════════════════════════════════════════
-// CONDUCTOR — MCP Server + Relay Bridge
+// CONDUCTOR — MCP Server + Orchestrator
 // ═══════════════════════════════════════════
-// MCP protocol over stdio (for Cursor/Claude Code).
-// WebSocket relay to Figma plugin (for canvas operations).
-//
-// Pure design tools (color_palette, type_scale, etc.) resolve locally.
-// Figma tools (create_frame, read_node, etc.) forward through WebSocket.
+// When create_page or create_section is called:
+//   1. Generates a blueprint (30-50 sequential commands)
+//   2. Executes each one through the relay to the Figma plugin
+//   3. Each command references results from previous commands ($ref)
+//   4. Returns a summary of everything created
 
 import { TOOLS } from './tools/registry.js';
 import { handleTool } from './tools/handlers.js';
 import { Relay } from './relay.js';
+import { getBlueprint } from './blueprints.js';
+import { executeSequence } from './orchestrator.js';
 
-var SERVER_INFO = { name: 'conductor-figma', version: '0.2.0' };
+var SERVER_INFO = { name: 'conductor-figma', version: '0.3.0' };
 var CAPABILITIES = { tools: {} };
 var relay = null;
+
+// Tools that trigger blueprint orchestration (multi-command sequences)
+var BLUEPRINT_TOOLS = new Set(['create_page', 'create_section']);
 
 export async function startServer(options) {
   options = options || {};
@@ -23,9 +28,9 @@ export async function startServer(options) {
   var relayStarted = await relay.start();
 
   if (relayStarted) {
-    process.stderr.write('CONDUCTOR: MCP + relay started (' + TOOLS.length + ' tools, ws://localhost:' + port + ')\n');
+    process.stderr.write('CONDUCTOR v0.3.0: MCP + orchestrator ready (' + TOOLS.length + ' tools, ws://localhost:' + port + ')\n');
   } else {
-    process.stderr.write('CONDUCTOR: MCP started (' + TOOLS.length + ' tools, no relay — install ws for Figma bridge)\n');
+    process.stderr.write('CONDUCTOR v0.3.0: MCP ready (' + TOOLS.length + ' tools, no relay — install ws)\n');
   }
 
   var buffer = '';
@@ -89,7 +94,47 @@ async function handleMessage(msg) {
 }
 
 async function handleToolCall(id, toolName, toolArgs) {
-  // If tool is a direct Figma command and plugin is connected — forward it
+
+  // ═══ ORCHESTRATED BLUEPRINTS ═══
+  // create_page and create_section generate 20-50 commands and execute them all
+  if (BLUEPRINT_TOOLS.has(toolName) && relay && relay.isConnected()) {
+    var blueprint = getBlueprint(toolName, toolArgs);
+
+    if (blueprint && blueprint.commands && blueprint.commands.length > 0) {
+      process.stderr.write('CONDUCTOR orchestrator: ' + toolName + ' -> ' + blueprint.commands.length + ' commands\n');
+      process.stderr.write('CONDUCTOR orchestrator: ' + blueprint.description + '\n');
+
+      var outcome = await executeSequence(relay, blueprint.commands);
+
+      var summary = {
+        tool: toolName,
+        description: blueprint.description,
+        totalCommands: outcome.totalSteps,
+        completed: outcome.completedSteps,
+        errors: outcome.errors.length,
+        success: outcome.success,
+        createdNodes: [],
+      };
+
+      // Collect all created node IDs and names
+      for (var r = 0; r < outcome.results.length; r++) {
+        var res = outcome.results[r];
+        if (res && res.id) {
+          summary.createdNodes.push({ id: res.id, name: res.name || '', type: res.type || '' });
+        }
+      }
+
+      if (outcome.errors.length > 0) {
+        summary.errorDetails = outcome.errors;
+      }
+
+      sendResult(id, { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] });
+      return;
+    }
+  }
+
+  // ═══ DIRECT FIGMA COMMANDS ═══
+  // Single commands forwarded directly to plugin
   if (relay && relay.isFigmaCommand(toolName) && relay.isConnected()) {
     process.stderr.write('CONDUCTOR: -> Figma: ' + toolName + '\n');
     try {
@@ -102,10 +147,10 @@ async function handleToolCall(id, toolName, toolArgs) {
     return;
   }
 
-  // Run through design intelligence handler
+  // ═══ DESIGN INTELLIGENCE (local) ═══
   var result = handleTool(toolName, toolArgs, null);
 
-  // Check if handler produced a Figma action we should forward
+  // Check if handler produced a Figma action to forward
   if (relay && relay.isConnected()) {
     try {
       var data = JSON.parse(result.content[0].text);
@@ -120,7 +165,25 @@ async function handleToolCall(id, toolName, toolArgs) {
     } catch (e) { /* not JSON or no action */ }
   }
 
-  // If Figma command but plugin not connected — add note
+  // Blueprint tool but plugin not connected — return the blueprint spec
+  if (BLUEPRINT_TOOLS.has(toolName)) {
+    var bp = getBlueprint(toolName, toolArgs);
+    if (bp) {
+      var spec = {
+        tool: toolName,
+        description: bp.description,
+        commandCount: bp.commands.length,
+        _note: relay && !relay.isConnected()
+          ? 'Figma plugin not connected. Connect the CONDUCTOR plugin to execute these ' + bp.commands.length + ' commands on canvas.'
+          : 'WebSocket relay not available. Install ws package for Figma bridge.',
+        commands: bp.commands.map(function(c, i) { return { step: i, type: c.type, name: c.data.name || c.data.text || '' }; }),
+      };
+      sendResult(id, { content: [{ type: 'text', text: JSON.stringify(spec, null, 2) }] });
+      return;
+    }
+  }
+
+  // Figma command but not connected — add note
   if (relay && relay.isFigmaCommand(toolName) && !relay.isConnected()) {
     try {
       var parsed = JSON.parse(result.content[0].text);

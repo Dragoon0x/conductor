@@ -24,6 +24,10 @@ import {
   handleTool,
   // Export
   exportCSS, exportTailwind, exportSCSS, exportJSON, exportW3CTokens,
+  // Blueprints
+  getBlueprint, buildLandingPage, buildPricingPage, buildDashboardPage, buildSection,
+  // Orchestrator
+  executeSequence,
 } from '../src/index.js';
 
 let passed = 0;
@@ -312,7 +316,156 @@ const jsonExport = exportJSON(tokens);
 const jsonData = JSON.parse(jsonExport);
 assert(jsonData.colors.primary === '#6366f1', 'JSON export preserves data');
 
+// ─── Blueprints: Landing Page ─────────────
+
+console.log('\n  Blueprints: Landing Page');
+
+var landing = buildLandingPage({});
+assert(landing.commands.length > 25, 'Landing page has 25+ commands (got ' + landing.commands.length + ')');
+assert(landing.description.includes('Landing page'), 'Description mentions landing page');
+assertEq(landing.commands[0].type, 'create_frame', 'First command creates root frame');
+assert(landing.commands[0].data.name === 'Landing Page', 'Root frame named Landing Page');
+assert(landing.commands[0].data.width === 1440, 'Root frame is 1440px wide');
+
+// Verify parent references exist
+var hasParentRefs = landing.commands.slice(1).every(function(c) {
+  return c.data.parentId && c.data.parentId.startsWith('$');
+});
+assert(hasParentRefs, 'All child commands have $ref parent IDs');
+
+// Check all commands have valid types
+var validTypes = new Set(['create_frame', 'create_text', 'create_rect']);
+var allValidTypes = landing.commands.every(function(c) { return validTypes.has(c.type); });
+assert(allValidTypes, 'All commands have valid Figma types');
+
+// Check customization
+var customLanding = buildLandingPage({ brandColor: '#e8590c', brand: 'TestBrand', title: 'Custom Title' });
+var hasCustomTitle = customLanding.commands.some(function(c) { return c.data.text === 'Custom Title'; });
+assert(hasCustomTitle, 'Custom title appears in commands');
+var hasBrandName = customLanding.commands.some(function(c) { return c.data.text === 'TestBrand'; });
+assert(hasBrandName, 'Brand name appears in nav');
+
+// ─── Blueprints: Pricing Page ────────────
+
+console.log('\n  Blueprints: Pricing Page');
+
+var pricing = buildPricingPage({});
+assert(pricing.commands.length > 20, 'Pricing page has 20+ commands (got ' + pricing.commands.length + ')');
+assert(pricing.description.includes('Pricing'), 'Description mentions pricing');
+assert(pricing.description.includes('3 tiers'), 'Description mentions 3 tiers');
+
+// Check tier names exist
+var tierNames = ['Starter', 'Pro', 'Enterprise'];
+for (var ti = 0; ti < tierNames.length; ti++) {
+  var hasTier = pricing.commands.some(function(c) { return c.data.name && c.data.name.includes(tierNames[ti]); });
+  assert(hasTier, 'Has ' + tierNames[ti] + ' tier');
+}
+
+// Custom tiers
+var customPricing = buildPricingPage({
+  tiers: [
+    { name: 'Free', price: '$0', period: '/mo', desc: 'Free tier', features: ['1 project'], cta: 'Start', highlighted: false },
+    { name: 'Team', price: '$49', period: '/mo', desc: 'Team tier', features: ['10 projects', 'Support'], cta: 'Buy', highlighted: true },
+  ]
+});
+assert(customPricing.commands.length > 10, 'Custom 2-tier pricing generates commands');
+
+// ─── Blueprints: Dashboard ───────────────
+
+console.log('\n  Blueprints: Dashboard');
+
+var dashboard = buildDashboardPage({});
+assert(dashboard.commands.length > 20, 'Dashboard has 20+ commands (got ' + dashboard.commands.length + ')');
+assert(dashboard.description.includes('Dashboard'), 'Description mentions dashboard');
+assert(dashboard.description.includes('sidebar'), 'Description mentions sidebar');
+
+// Check sidebar nav items exist
+var sidebarItems = ['Overview', 'Analytics', 'Settings'];
+for (var si = 0; si < sidebarItems.length; si++) {
+  var hasNav = dashboard.commands.some(function(c) { return c.data.text === sidebarItems[si]; });
+  assert(hasNav, 'Has sidebar item: ' + sidebarItems[si]);
+}
+
+// Check metric cards
+var hasRevenue = dashboard.commands.some(function(c) { return c.data.text === '$48,290'; });
+assert(hasRevenue, 'Has revenue metric value');
+
+// ─── Blueprints: Sections ────────────────
+
+console.log('\n  Blueprints: Sections');
+
+var sectionTypes = ['hero', 'features', 'cta', 'testimonials', 'faq'];
+for (var st = 0; st < sectionTypes.length; st++) {
+  var sec = buildSection(sectionTypes[st], {});
+  assert(sec.commands.length >= 3, sectionTypes[st] + ' section has 3+ commands (got ' + sec.commands.length + ')');
+  assert(sec.description.length > 0, sectionTypes[st] + ' has description');
+}
+
+// ─── Blueprint Router ────────────────────
+
+console.log('\n  Blueprint Router');
+
+var routedLanding = getBlueprint('create_page', { pageType: 'landing' });
+assert(routedLanding !== null, 'Router returns landing blueprint');
+assert(routedLanding.commands.length > 25, 'Routed landing has commands');
+
+var routedPricing = getBlueprint('create_page', { pageType: 'pricing' });
+assert(routedPricing !== null, 'Router returns pricing blueprint');
+
+var routedDash = getBlueprint('create_page', { pageType: 'dashboard' });
+assert(routedDash !== null, 'Router returns dashboard blueprint');
+
+var routedSection = getBlueprint('create_section', { sectionType: 'hero' });
+assert(routedSection !== null, 'Router returns hero section');
+
+var routedUnknown = getBlueprint('color_palette', {});
+assert(routedUnknown === null, 'Router returns null for non-blueprint tools');
+
+// ─── Orchestrator: Ref Resolution ────────
+
+console.log('\n  Orchestrator: Ref Resolution');
+
+// Test that executeSequence is a function
+assert(typeof executeSequence === 'function', 'executeSequence is exported');
+
+// Test $ref resolution by checking blueprint command structure
+var bp = buildLandingPage({});
+var secondCmd = bp.commands[1];
+assert(secondCmd.data.parentId === '$0.id', 'Second command references root via $0.id');
+
+// Verify all $ref patterns are valid
+var refPattern = /\$(\d+)\.(\w+)/;
+var allRefsValid = true;
+for (var ri = 1; ri < bp.commands.length; ri++) {
+  var pid = bp.commands[ri].data.parentId;
+  if (pid) {
+    var match = refPattern.exec(pid);
+    if (match) {
+      var refIdx = parseInt(match[1]);
+      if (refIdx >= ri) { allRefsValid = false; break; }
+    }
+  }
+}
+assert(allRefsValid, 'All $ref indices point to earlier commands (no forward refs)');
+
+// ─── Grid Alignment in Blueprints ────────
+
+console.log('\n  Blueprint Grid Alignment');
+
+var landingCmds = buildLandingPage({}).commands;
+var paddingValues = [];
+var gapValues = [];
+for (var gi = 0; gi < landingCmds.length; gi++) {
+  var d = landingCmds[gi].data;
+  if (d.padding !== undefined && d.padding > 0) paddingValues.push(d.padding);
+  if (d.gap !== undefined && d.gap > 0) gapValues.push(d.gap);
+}
+var allPaddingOnGrid = paddingValues.every(function(v) { return v % 4 === 0; });
+assert(allPaddingOnGrid, 'All padding values are on 4px grid (' + paddingValues.join(', ') + ')');
+var allGapOnGrid = gapValues.every(function(v) { return v % 4 === 0; });
+assert(allGapOnGrid, 'All gap values are on 4px grid (' + gapValues.join(', ') + ')');
+
 // ─── Summary ─────────────────────────────
 
-console.log(`\n  ${passed} passed, ${failed} failed\n`);
+console.log('\n  ' + passed + ' passed, ' + failed + ' failed\n');
 process.exit(failed > 0 ? 1 : 0);
