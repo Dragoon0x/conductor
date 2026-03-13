@@ -7,9 +7,11 @@ import { handleTool } from './tools/handlers.js'
 import { createBridge } from './bridge.js'
 
 const VERSION = '3.0.0'
-let bridge = null
+const bridge = createBridge()
+bridge.start()
 
 function log(...args) { process.stderr.write('[conductor] ' + args.join(' ') + '\n') }
+log(`Conductor v${VERSION} starting — WebSocket on port ${bridge.getPort()}`)
 
 // ─── JSON-RPC over stdio ───
 let buffer = ''
@@ -49,10 +51,6 @@ async function handleMessage(msg) {
 
   switch (method) {
     case 'initialize':
-      if (!bridge) {
-        bridge = createBridge()
-        await bridge.start()
-      }
       return respond(id, {
         protocolVersion: '2024-11-05',
         capabilities: { tools: { listChanged: false } },
