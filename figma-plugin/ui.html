@@ -13,7 +13,7 @@ p { color:#888; margin:0 0 12px; font-size:11px; }
 </head>
 <body>
 <h3>Conductor v3</h3>
-<p>150+ design-intelligent tools</p>
+<p>203 design-intelligent tools</p>
 <div class="status">
   <div class="dot" id="dot"></div>
   <span id="statusText">Connecting...</span>
@@ -21,14 +21,16 @@ p { color:#888; margin:0 0 12px; font-size:11px; }
 <div class="log" id="log"></div>
 
 <script>
-let ws = null;
-let port = 3055;
-let reconnectTimer = null;
+var ws = null;
+var port = 3055;
+var reconnectTimer = null;
+var hosts = ['localhost', '127.0.0.1', '0.0.0.0'];
+var hostIndex = 0;
 
 function log(msg) {
-  const el = document.getElementById('log');
-  const time = new Date().toLocaleTimeString();
-  el.innerHTML += `<div>${time} ${msg}</div>`;
+  var el = document.getElementById('log');
+  var time = new Date().toLocaleTimeString();
+  el.innerHTML += '<div>' + time + ' ' + msg + '</div>';
   el.scrollTop = el.scrollHeight;
 }
 
@@ -38,38 +40,51 @@ function setStatus(connected) {
 }
 
 function connect() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  var host = hosts[hostIndex % hosts.length];
+  var url = 'ws://' + host + ':' + port;
   try {
-    ws = new WebSocket(`ws://127.0.0.1:${port}`);
-    ws.onopen = () => {
+    log('Trying ' + url);
+    ws = new WebSocket(url);
+    ws.onopen = function() {
       setStatus(true);
-      log('Connected to MCP server');
+      log('Connected via ' + host);
       parent.postMessage({ pluginMessage: { type: 'connected' } }, '*');
     };
-    ws.onmessage = (e) => {
+    ws.onmessage = function(e) {
       try {
-        const data = JSON.parse(e.data);
-        log(`← ${data.command || 'response'}`);
-        parent.postMessage({ pluginMessage: { type: 'ws-message', data } }, '*');
+        var data = JSON.parse(e.data);
+        log('← ' + (data.command || 'response'));
+        parent.postMessage({ pluginMessage: { type: 'ws-message', data: data } }, '*');
       } catch (err) { log('Parse error: ' + err.message); }
     };
-    ws.onclose = () => {
+    ws.onclose = function() {
       setStatus(false);
       log('Disconnected');
       parent.postMessage({ pluginMessage: { type: 'disconnected' } }, '*');
-      reconnectTimer = setTimeout(connect, 3000);
+      hostIndex++;
+      reconnectTimer = setTimeout(connect, 2000);
     };
-    ws.onerror = () => { setStatus(false); };
-  } catch (e) { log('Connection error'); setTimeout(connect, 3000); }
+    ws.onerror = function() {
+      setStatus(false);
+    };
+  } catch (e) {
+    log('Error: ' + e.message);
+    hostIndex++;
+    reconnectTimer = setTimeout(connect, 2000);
+  }
 }
 
-window.onmessage = (e) => {
-  const msg = e.data.pluginMessage;
+window.onmessage = function(e) {
+  var msg = e.data.pluginMessage;
   if (!msg) return;
   if (msg.type === 'connect') { port = msg.port || 3055; connect(); }
   if (msg.type === 'ws-send' && ws && ws.readyState === 1) {
     ws.send(msg.data);
-    const parsed = JSON.parse(msg.data);
-    log(`→ response ${parsed.id}`);
+    try {
+      var parsed = JSON.parse(msg.data);
+      log('→ response ' + parsed.id);
+    } catch(ex) {}
   }
 };
 </script>
