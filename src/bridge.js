@@ -17,7 +17,7 @@ export function createBridge(port) {
   function start() {
     return new Promise(function(resolve) {
       try {
-        wss = new WebSocketServer({ port: port })
+        wss = new WebSocketServer({ port: port, host: "0.0.0.0" })
         wss.on('listening', function() { isOwner = true; log('WebSocket server on port ' + port); resolve() })
         wss.on('connection', function(ws) {
           client = ws
