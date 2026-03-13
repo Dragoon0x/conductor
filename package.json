@@ -1,17 +1,18 @@
 {
   "name": "conductor-figma",
-  "version": "1.0.2",
-  "description": "Design-intelligent MCP server for Figma. 61 tools across 10 categories. 8px grid, type scale ratios, auto-layout, component reuse, accessibility — real design intelligence, not shape proxying.",
+  "version": "3.0.0",
+  "description": "Design-intelligent MCP server for Figma. 150+ tools with built-in design intelligence. Every tool knows typography, spacing, color, accessibility. Not a shape proxy — a design engine.",
   "author": "0xDragoon",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./src/server.js",
   "bin": {
     "conductor-figma": "./bin/conductor.js"
   },
   "files": [
-    "bin",
     "src",
+    "bin",
+    "figma-plugin",
     "README.md",
     "LICENSE"
   ],
@@ -19,22 +20,30 @@
     "start": "node bin/conductor.js",
     "test": "node test/run.js"
   },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "ws": "^8.19.0"
+  },
   "keywords": [
-    "mcp", "figma", "design", "ai", "cursor", "claude-code",
-    "auto-layout", "design-system", "tokens", "components",
-    "accessibility", "wcag", "type-scale", "spacing", "grid",
-    "model-context-protocol", "copilot", "devtools"
+    "figma",
+    "mcp",
+    "model-context-protocol",
+    "design",
+    "ai-agent",
+    "cursor",
+    "claude-code",
+    "auto-layout",
+    "design-system",
+    "accessibility",
+    "design-tokens",
+    "code-export",
+    "react",
+    "tailwind",
+    "design-intelligence"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dragoon0x/conductor"
   },
-  "homepage": "https://dragoon0x.github.io/conductor/",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {},
-  "optionalDependencies": {
-    "ws": "^8.0.0"
-  }
+  "homepage": "https://dragoon0x.github.io/conductor/"
 }

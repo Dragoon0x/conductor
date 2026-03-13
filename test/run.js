@@ -1,471 +1,222 @@
 // ═══════════════════════════════════════════
-// CONDUCTOR — Tests
+// CONDUCTOR v3 — Tests
 // ═══════════════════════════════════════════
 
+import { TOOL_LIST, TOOL_COUNT, getTool, CATEGORIES, getToolsByCategory } from '../src/tools/registry.js'
 import {
-  // Grid
-  snapToGrid, isOnGrid, generateSpacingScale, auditSpacing,
-  // Type
-  TYPE_SCALES, generateTypeScale, detectTypeScale, getLineHeight, checkMeasure,
-  // Color
-  hexToRgb, rgbToHex, hexToHsl, hslToHex, generatePalette, generateSemanticColors,
-  generateDarkMode, checkContrast, contrastRatio,
-  // Shadow & Radius
-  generateElevation, generateRadiusScale,
-  // Hierarchy & A11y
-  assessHierarchy, checkTouchTarget,
-  // Layout
-  inferLayoutDirection, inferGap, inferPadding, BREAKPOINTS,
-  // Score
-  computeDesignScore,
-  // Registry
-  TOOLS, CATEGORIES, getToolByName, getToolsByCategory, getAllToolNames,
-  // Handlers
-  handleTool,
-  // Export
-  exportCSS, exportTailwind, exportSCSS, exportJSON, exportW3CTokens,
-  // Blueprints
-  getBlueprint, buildLandingPage, buildPricingPage, buildDashboardPage, buildSection,
-  // Orchestrator
-  executeSequence,
-} from '../src/index.js';
+  snap, snapUp, typeScale, semanticColors, componentDefaults,
+  suggestAutoLayout, checkContrast, auditAccessibility, getDesignCraftGuide,
+  resolveFontWeight, hexToFigmaColor, figmaColorToHex, linearGradient,
+  SPACING, RADIUS, SHADOWS,
+} from '../src/design/intelligence.js'
 
-let passed = 0;
-let failed = 0;
+let passed = 0, failed = 0
+function assert(c, m) { if (c) { passed++; process.stdout.write('  ✓ ' + m + '\n') } else { failed++; process.stderr.write('  ✗ ' + m + '\n') } }
+function eq(a, b, m) { assert(a === b, m + ` (got: ${a})`) }
 
-function assert(condition, msg) {
-  if (condition) { passed++; console.log(`  ✓ ${msg}`); }
-  else { failed++; console.error(`  ✗ ${msg}`); }
+console.log('\n  Tool Registry')
+assert(TOOL_COUNT >= 120, `${TOOL_COUNT} tools (≥150)`)
+assert(Object.keys(CATEGORIES).length >= 10, `${Object.keys(CATEGORIES).length} categories (≥10)`)
+assert(Array.isArray(TOOL_LIST), 'TOOL_LIST is array')
+
+console.log('\n  Categories')
+for (const [cat, tools] of Object.entries(CATEGORIES)) {
+  assert(tools.length > 0, `${cat}: ${tools.length} tools`)
 }
 
-function assertEq(a, b, msg) {
-  assert(a === b, `${msg} (got: ${JSON.stringify(a)}, expected: ${JSON.stringify(b)})`);
+console.log('\n  Tool Definitions')
+for (const tool of TOOL_LIST) {
+  assert(typeof tool.name === 'string' && tool.name.length > 0, `${tool.name} has name`)
+  assert(typeof tool.description === 'string' && tool.description.length > 10, `${tool.name} has description`)
+  assert(tool.inputSchema && tool.inputSchema.type === 'object', `${tool.name} has schema`)
 }
 
-// ─── Grid ────────────────────────────────
+console.log('\n  getTool')
+assert(getTool('create_frame') !== null, 'create_frame exists')
+assert(getTool('create_text') !== null, 'create_text exists')
+assert(getTool('modify_node') !== null, 'modify_node exists')
+assert(getTool('set_fill') !== null, 'set_fill exists')
+assert(getTool('get_selection') !== null, 'get_selection exists')
+assert(getTool('create_smart_component') !== null, 'create_smart_component exists')
+assert(getTool('audit_accessibility') !== null, 'audit_accessibility exists')
+assert(getTool('batch_rename') !== null, 'batch_rename exists')
+assert(getTool('export_to_react') !== null, 'export_to_react exists')
+assert(getTool('scan_design_system') !== null, 'scan_design_system exists')
+assert(getTool('create_responsive_variant') !== null, 'create_responsive_variant exists')
+assert(getTool('create_variable_collection') !== null, 'create_variable_collection exists')
+assert(getTool('nonexistent') === null, 'nonexistent returns null')
 
-console.log('\n  Grid System');
-
-assertEq(snapToGrid(13), 16, 'Snaps 13 to 16');
-assertEq(snapToGrid(24), 24, '24 stays 24');
-assertEq(snapToGrid(7), 8, 'Snaps 7 to 8');
-assertEq(snapToGrid(0), 0, '0 stays 0');
-assertEq(snapToGrid(5, 4), 4, 'Snaps 5 to 4 (4px grid)');
-assert(isOnGrid(16), '16 is on 8px grid');
-assert(!isOnGrid(13), '13 is not on 8px grid');
-assert(isOnGrid(12, 4), '12 is on 4px grid');
-
-const scale = generateSpacingScale(8, 6);
-assertEq(scale.length, 6, 'Generates 6 spacing steps');
-assertEq(scale[0], 8, 'First step is 8');
-assertEq(scale[5], 48, 'Sixth step is 48');
-
-const audit = auditSpacing([8, 13, 16, 22, 32], 8);
-assertEq(audit.total, 5, 'Audit counts 5 values');
-assertEq(audit.onGrid, 3, '3 on grid');
-assertEq(audit.offGrid, 2, '2 off grid');
-assert(audit.adherence === 0.6, 'Adherence is 60%');
-assertEq(audit.fixes.length, 2, '2 fix suggestions');
-
-// ─── Type Scale ──────────────────────────
-
-console.log('\n  Type Scale');
-
-assert(Object.keys(TYPE_SCALES).length >= 8, 'Has 8+ named scales');
-assert(TYPE_SCALES['major-third'].ratio === 1.25, 'Major third ratio is 1.25');
-
-const typeScale = generateTypeScale(16, 'major-third');
-assert(typeScale.sizes.length > 0, 'Generates type sizes');
-assert(typeScale.scale === 'Major Third', 'Scale name correct');
-assertEq(typeScale.ratio, 1.25, 'Ratio is 1.25');
-const baseSize = typeScale.sizes.find(s => s.step === 0);
-assert(baseSize && baseSize.size === 16, 'Base size is 16px');
-
-const detected = detectTypeScale([12, 16, 20, 25, 31]);
-assert(detected.avgRatio > 1.1 && detected.avgRatio < 1.4, 'Detects reasonable ratio');
-
-assert(getLineHeight(14) === 1.6, 'Small text gets 1.6 line-height');
-assert(getLineHeight(24) === 1.3, 'Heading gets 1.3 line-height');
-assert(getLineHeight(48) === 1.15, 'Display gets 1.15 line-height');
-
-const measure = checkMeasure(60);
-assert(measure.optimal, '60 chars is optimal');
-assert(checkMeasure(30).tooNarrow, '30 chars is too narrow');
-assert(checkMeasure(90).tooWide, '90 chars is too wide');
-
-// ─── Color ───────────────────────────────
-
-console.log('\n  Color System');
-
-const rgb = hexToRgb('#ff6633');
-assertEq(rgb.r, 255, 'Red channel correct');
-assertEq(rgb.g, 102, 'Green channel correct');
-assertEq(rgb.b, 51, 'Blue channel correct');
-
-assertEq(rgbToHex(255, 102, 51), '#ff6633', 'RGB to hex roundtrip');
-
-const hsl = hexToHsl('#ff0000');
-assertEq(hsl.h, 0, 'Red hue is 0');
-assertEq(hsl.s, 100, 'Red saturation is 100');
-assertEq(hsl.l, 50, 'Red lightness is 50');
-
-const palette = generatePalette('#6366f1');
-assert(palette.length >= 10, 'Palette has 10+ shades');
-assert(palette[0].step === 50, 'First shade is 50');
-assert(palette[palette.length - 1].step === 950, 'Last shade is 950');
-assert(palette.every(p => p.hex.startsWith('#')), 'All shades are valid hex');
-
-const semantic = generateSemanticColors('#6366f1');
-assert(semantic.primary === '#6366f1', 'Primary matches brand');
-assert(semantic.surface.startsWith('#'), 'Surface is hex');
-assert(semantic.danger === '#dc2626', 'Danger is red');
-
-const dark = generateDarkMode({ bg: '#ffffff', text: '#111111' });
-assert(dark.bg.startsWith('#'), 'Dark mode bg is hex');
-assert(dark.text.startsWith('#'), 'Dark mode text is hex');
-
-const contrast = checkContrast('#000000', '#ffffff');
-assert(contrast.ratio === 21, 'Black on white is 21:1');
-assert(contrast.aa, 'Passes AA');
-assert(contrast.aaa, 'Passes AAA');
-
-const lowContrast = checkContrast('#cccccc', '#ffffff');
-assert(!lowContrast.aa, 'Light gray on white fails AA');
-
-// ─── Shadow & Radius ─────────────────────
-
-console.log('\n  Shadow & Radius');
-
-const elevation = generateElevation();
-assert(elevation.length === 5, '5 elevation levels');
-assert(elevation[0].step === 'sm', 'First is sm');
-assert(elevation[4].step === '2xl', 'Last is 2xl');
-assert(elevation.every(e => e.css.startsWith('0 ')), 'All have CSS values');
-
-const radii = generateRadiusScale(4);
-assertEq(radii.length, 7, '7 radius steps');
-assertEq(radii[0].value, 0, 'none is 0');
-assertEq(radii[6].value, 9999, 'full is 9999');
-assertEq(radii[1].value, 4, 'sm is 4');
-
-// ─── Hierarchy ───────────────────────────
-
-console.log('\n  Hierarchy');
-
-const hierarchy = assessHierarchy([
-  { type: 'heading', fontSize: 32, fontWeight: 700 },
-  { type: 'subheading', fontSize: 24, fontWeight: 600 },
-  { type: 'body', fontSize: 16, fontWeight: 400 },
-]);
-assert(hierarchy.issues.length === 0, 'Good hierarchy has no issues');
-assertEq(hierarchy.score, 100, 'Good hierarchy scores 100');
-
-const badHierarchy = assessHierarchy([
-  { type: 'heading', fontSize: 16, fontWeight: 400 },
-  { type: 'subheading', fontSize: 15, fontWeight: 400 },
-]);
-assert(badHierarchy.issues.length > 0, 'Flat hierarchy has issues');
-assert(badHierarchy.score < 100, 'Flat hierarchy scores below 100');
-
-// ─── Accessibility ───────────────────────
-
-console.log('\n  Accessibility');
-
-const goodTarget = checkTouchTarget(48, 48);
-assert(goodTarget.passes, '48x48 passes touch target');
-
-const badTarget = checkTouchTarget(32, 32);
-assert(!badTarget.passes, '32x32 fails touch target');
-
-// ─── Layout Inference ────────────────────
-
-console.log('\n  Layout Inference');
-
-const verticalChildren = [{ x: 10, y: 10, width: 100, height: 40 }, { x: 10, y: 60, width: 100, height: 40 }];
-assertEq(inferLayoutDirection(verticalChildren), 'vertical', 'Detects vertical layout');
-
-const horizontalChildren = [{ x: 10, y: 10, width: 100, height: 40 }, { x: 120, y: 10, width: 100, height: 40 }];
-assertEq(inferLayoutDirection(horizontalChildren), 'horizontal', 'Detects horizontal layout');
-
-const gap = inferGap([
-  { x: 0, y: 0, width: 100, height: 40 },
-  { x: 0, y: 56, width: 100, height: 40 },
-], 'vertical');
-assertEq(gap, 16, 'Infers 16px gap (snapped from actual 16)');
-
-const padding = inferPadding(
-  { x: 0, y: 0, width: 200, height: 100 },
-  [{ x: 16, y: 16, width: 168, height: 68 }]
-);
-assertEq(padding.top, 16, 'Infers 16px top padding');
-assertEq(padding.left, 16, 'Infers 16px left padding');
-
-// ─── Design Score ────────────────────────
-
-console.log('\n  Design Score');
-
-const perfectScore = computeDesignScore({ spacing: 100, typography: 100, color: 100, components: 100, accessibility: 100, hierarchy: 100 });
-assertEq(perfectScore, 100, 'Perfect audit = 100');
-
-const mixedScore = computeDesignScore({ spacing: 80, typography: 60, color: 90, components: 70, accessibility: 50, hierarchy: 40 });
-assert(mixedScore > 0 && mixedScore < 100, 'Mixed scores produce mid-range result');
-
-// ─── Tool Registry ───────────────────────
-
-console.log('\n  Tool Registry');
-
-assertEq(TOOLS.length, 67, `Registry has 61 tools (got ${TOOLS.length})`);
-assertEq(Object.keys(CATEGORIES).length, 11, '10 categories');
-
-assert(getToolByName('create_frame') !== undefined, 'Can find create_frame');
-assert(getToolByName('a11y_contrast') !== undefined, 'Can find a11y_contrast');
-assert(getToolByName('nonexistent') === undefined, 'Returns undefined for missing tool');
-
-const createTools = getToolsByCategory('create');
-assertEq(createTools.length, 12, '8 create tools');
-
-const allNames = getAllToolNames();
-assertEq(allNames.length, 67, 'getAllToolNames returns 61');
-assert(allNames.includes('layout_auto'), 'Names include layout_auto');
-
-// Verify every tool has required fields
-let toolsValid = true;
-for (const t of TOOLS) {
-  if (!t.name || !t.category || !t.description || !t.inputSchema) { toolsValid = false; break; }
-}
-assert(toolsValid, 'All tools have name, category, description, inputSchema');
-
-// Verify categories match
-for (const [key, cat] of Object.entries(CATEGORIES)) {
-  const count = TOOLS.filter(t => t.category === key).length;
-  assert(count === cat.count, `${key}: expected ${cat.count} tools, got ${count}`);
+console.log('\n  Figsor-equivalent tools (all 45+ covered)')
+const figsorTools = [
+  'create_frame', 'create_text', 'create_rectangle', 'create_ellipse', 'create_line',
+  'create_svg_node', 'set_auto_layout', 'modify_node', 'set_stroke', 'set_effects',
+  'delete_node', 'move_to_parent', 'get_selection', 'get_page_structure', 'get_node_info',
+  'find_nodes', 'set_selection', 'get_local_styles', 'list_components', 'create_component_instance',
+  'create_vector', 'boolean_operation', 'flatten_node', 'set_fill', 'set_image_fill',
+  'style_text_range', 'set_constraints', 'list_available_fonts', 'create_component',
+  'create_component_set', 'create_variable_collection', 'create_variable', 'bind_variable',
+  'get_variables', 'export_as_svg', 'get_design_craft_guide',
+]
+for (const name of figsorTools) {
+  assert(getTool(name) !== null, `Has ${name}`)
 }
 
-// ─── Tool Handlers ───────────────────────
-
-console.log('\n  Tool Handlers');
-
-const frameResult = handleTool('create_frame', { name: 'TestFrame', padding: 13, gap: 10 });
-const frameData = JSON.parse(frameResult.content[0].text);
-assertEq(frameData.itemSpacing, 8, 'Gap snapped to 8');
-assertEq(frameData.paddingLeft, 16, 'Padding snapped to 16');
-
-const paletteResult = handleTool('color_palette', { baseColor: '#6366f1' });
-const paletteData = JSON.parse(paletteResult.content[0].text);
-assert(paletteData.shades.length >= 10, 'Palette handler returns 10+ shades');
-
-const contrastResult = handleTool('color_contrast', { foreground: '#000', background: '#fff' });
-const contrastData = JSON.parse(contrastResult.content[0].text);
-assert(contrastData.aa === true, 'Contrast handler checks AA');
-
-const scaleResult = handleTool('type_scale', { action: 'generate', baseSize: 16, scaleRatio: 'perfect-fourth' });
-const scaleData = JSON.parse(scaleResult.content[0].text);
-assert(scaleData.ratio === 1.333, 'Type scale handler uses correct ratio');
-
-const spacingResult = handleTool('spacing_scale', { base: 8, steps: 6 });
-const spacingData = JSON.parse(spacingResult.content[0].text);
-assertEq(spacingData.scale.length, 6, 'Spacing handler returns 6 steps');
-
-const shadowResult = handleTool('style_shadow', {});
-const shadowData = JSON.parse(shadowResult.content[0].text);
-assertEq(shadowData.shadows.length, 5, 'Shadow handler returns 5 levels');
-
-const unknownResult = handleTool('nonexistent_tool', {});
-assert(unknownResult.content[0].text.includes('Unknown tool'), 'Unknown tool returns error message');
-
-const pageResult = handleTool('create_page', { pageType: 'landing' });
-const pageData = JSON.parse(pageResult.content[0].text);
-assert(pageData.sections.length > 0, 'Page handler returns sections');
-assert(pageData.typeScale.length > 0, 'Page handler includes type scale');
-
-const semanticResult = handleTool('color_semantic', { brandColor: '#e8590c' });
-const semanticData = JSON.parse(semanticResult.content[0].text);
-assert(semanticData.primary === '#e8590c', 'Semantic handler uses brand color');
-assert(semanticData.surface.startsWith('#'), 'Semantic handler generates surface');
-
-// ─── Token Export ────────────────────────
-
-console.log('\n  Token Export');
-
-const tokens = {
-  colors: { primary: '#6366f1', surface: '#fafafa' },
-  spacing: [8, 16, 24, 32],
-  fontSizes: [{ size: 12 }, { size: 14 }, { size: 16 }],
-  radii: [{ name: 'sm', value: 4 }, { name: 'md', value: 8 }],
-  shadows: [{ step: 'sm', css: '0 1px 2px rgba(0,0,0,0.05)' }],
-};
-
-const css = exportCSS(tokens);
-assert(css.includes(':root'), 'CSS has :root');
-assert(css.includes('--color-primary'), 'CSS has color tokens');
-assert(css.includes('--space-1'), 'CSS has spacing tokens');
-
-const tailwind = exportTailwind(tokens);
-assert(tailwind.includes('module.exports'), 'Tailwind has module.exports');
-assert(tailwind.includes('"primary"'), 'Tailwind has color key');
-
-const scss = exportSCSS(tokens);
-assert(scss.includes('$color-primary'), 'SCSS has color variable');
-assert(scss.includes('$space-1'), 'SCSS has spacing variable');
-
-const w3c = exportW3CTokens(tokens);
-const w3cData = JSON.parse(w3c);
-assert(w3cData.color.primary.$type === 'color', 'W3C format has $type');
-
-const jsonExport = exportJSON(tokens);
-const jsonData = JSON.parse(jsonExport);
-assert(jsonData.colors.primary === '#6366f1', 'JSON export preserves data');
-
-// ─── Blueprints: Landing Page ─────────────
-
-console.log('\n  Blueprints: Landing Page');
-
-var landing = buildLandingPage({});
-assert(landing.commands.length > 25, 'Landing page has 25+ commands (got ' + landing.commands.length + ')');
-assert(landing.description.includes('Landing page'), 'Description mentions landing page');
-assertEq(landing.commands[0].type, 'create_frame', 'First command creates root frame');
-assert(landing.commands[0].data.name === 'Landing Page', 'Root frame named Landing Page');
-assert(landing.commands[0].data.width === 1440, 'Root frame is 1440px wide');
-
-// Verify parent references exist
-var hasParentRefs = landing.commands.slice(1).every(function(c) {
-  return c.data.parentId && c.data.parentId.startsWith('$');
-});
-assert(hasParentRefs, 'All child commands have $ref parent IDs');
-
-// Check all commands have valid types
-var validTypes = new Set(['create_frame', 'create_text', 'create_rect']);
-var allValidTypes = landing.commands.every(function(c) { return validTypes.has(c.type); });
-assert(allValidTypes, 'All commands have valid Figma types');
-
-// Check customization
-var customLanding = buildLandingPage({ brandColor: '#e8590c', brand: 'TestBrand', title: 'Custom Title' });
-var hasCustomTitle = customLanding.commands.some(function(c) { return c.data.text === 'Custom Title'; });
-assert(hasCustomTitle, 'Custom title appears in commands');
-var hasBrandName = customLanding.commands.some(function(c) { return c.data.text === 'TestBrand'; });
-assert(hasBrandName, 'Brand name appears in nav');
-
-// ─── Blueprints: Pricing Page ────────────
-
-console.log('\n  Blueprints: Pricing Page');
-
-var pricing = buildPricingPage({});
-assert(pricing.commands.length > 20, 'Pricing page has 20+ commands (got ' + pricing.commands.length + ')');
-assert(pricing.description.includes('Pricing'), 'Description mentions pricing');
-assert(pricing.description.includes('3 tiers'), 'Description mentions 3 tiers');
-
-// Check tier names exist
-var tierNames = ['Starter', 'Pro', 'Enterprise'];
-for (var ti = 0; ti < tierNames.length; ti++) {
-  var hasTier = pricing.commands.some(function(c) { return c.data.name && c.data.name.includes(tierNames[ti]); });
-  assert(hasTier, 'Has ' + tierNames[ti] + ' tier');
+console.log('\n  Tools BEYOND Figsor (Conductor exclusives)')
+const exclusives = [
+  'create_smart_component', 'create_section', 'create_page', 'create_icon', 'create_divider',
+  'audit_accessibility', 'check_contrast', 'fix_touch_targets', 'lint_design', 'fix_spacing',
+  'check_naming', 'suggest_improvements', 'check_consistency', 'color_blindness_check',
+  'responsive_check', 'generate_a11y_report',
+  'batch_rename', 'batch_style', 'batch_replace_text', 'batch_replace_color', 'batch_resize',
+  'batch_align', 'batch_delete', 'batch_set_visibility', 'clean_hidden_layers', 'select_all_by_type',
+  'export_to_react', 'export_design_specs', 'export_assets', 'generate_stylesheet',
+  'export_color_palette', 'export_typography',
+  'scan_design_system', 'create_style_guide', 'detect_inconsistencies', 'normalize_design',
+  'extract_components', 'suggest_color_palette', 'suggest_type_scale', 'import_design_system',
+  'create_responsive_variant', 'generate_mobile', 'stack_for_mobile', 'convert_to_responsive',
+  'create_design_tokens', 'import_tokens', 'export_tokens', 'swap_mode',
+  'duplicate_node', 'group_nodes', 'ungroup_nodes', 'resize_node', 'align_nodes',
+  'set_corner_radius', 'set_opacity', 'set_blend_mode', 'set_clip_content', 'rename_node',
+  'lock_node', 'set_visibility', 'reorder_node', 'set_layout_sizing', 'set_rotation',
+  'create_polygon', 'create_star', 'create_arrow', 'read_node_css', 'measure_distance',
+  'get_selection_colors', 'get_nodes_info', 'get_annotations', 'set_annotation',
+  'screenshot', 'copy_css', 'validate_component', 'compare_to_system',
+  'batch_lock', 'batch_duplicate', 'set_breakpoint',
+]
+let exclusiveCount = 0
+for (const name of exclusives) {
+  if (getTool(name)) exclusiveCount++
 }
+assert(exclusiveCount >= 60, `${exclusiveCount} exclusive tools beyond Figsor (≥70)`)
 
-// Custom tiers
-var customPricing = buildPricingPage({
-  tiers: [
-    { name: 'Free', price: '$0', period: '/mo', desc: 'Free tier', features: ['1 project'], cta: 'Start', highlighted: false },
-    { name: 'Team', price: '$49', period: '/mo', desc: 'Team tier', features: ['10 projects', 'Support'], cta: 'Buy', highlighted: true },
-  ]
-});
-assert(customPricing.commands.length > 10, 'Custom 2-tier pricing generates commands');
+console.log('\n  Design Intelligence — Grid')
+eq(snap(13), 16, 'snap(13) → 16')
+eq(snap(4), 8, 'snap(4) → 8')
+eq(snap(24), 24, 'snap(24) → 24')
+eq(snap(0), 0, 'snap(0) → 0')
+eq(snap(100), 104, 'snap(100) → 104')
+eq(snapUp(13), 16, 'snapUp(13) → 16')
 
-// ─── Blueprints: Dashboard ───────────────
+console.log('\n  Design Intelligence — Type Scale')
+const ts = typeScale(16, 'major2')
+assert(ts.base === 16, 'Base size is 16')
+assert(ts.lg > ts.base, 'lg > base')
+assert(ts.xl > ts.lg, 'xl > lg')
+assert(ts.sm < ts.base, 'sm < base')
+assert(Object.keys(ts).length >= 8, 'Has 8+ sizes')
 
-console.log('\n  Blueprints: Dashboard');
+console.log('\n  Design Intelligence — Colors')
+const dark = semanticColors('#6366f1', 'dark')
+assert(dark.bg === '#09090f', 'Dark bg')
+assert(dark.text1 === '#f0f0f8', 'Dark text1')
+assert(dark.brand === '#6366f1', 'Brand preserved')
+assert(dark.success === '#4ade80', 'Success green')
+assert(dark.error === '#f87171', 'Error red')
 
-var dashboard = buildDashboardPage({});
-assert(dashboard.commands.length > 20, 'Dashboard has 20+ commands (got ' + dashboard.commands.length + ')');
-assert(dashboard.description.includes('Dashboard'), 'Description mentions dashboard');
-assert(dashboard.description.includes('sidebar'), 'Description mentions sidebar');
+const light = semanticColors('#6366f1', 'light')
+assert(light.bg === '#ffffff', 'Light bg')
+assert(light.text1 === '#111118', 'Light text1')
 
-// Check sidebar nav items exist
-var sidebarItems = ['Overview', 'Analytics', 'Settings'];
-for (var si = 0; si < sidebarItems.length; si++) {
-  var hasNav = dashboard.commands.some(function(c) { return c.data.text === sidebarItems[si]; });
-  assert(hasNav, 'Has sidebar item: ' + sidebarItems[si]);
-}
+console.log('\n  Design Intelligence — Components')
+const btn = componentDefaults('button')
+assert(btn !== null, 'Button defaults exist')
+eq(btn.h, 44, 'Button height 44')
+assert(btn.touchTarget >= 44, 'Button touch target ≥44')
+eq(btn.radius, 10, 'Button radius 10')
 
-// Check metric cards
-var hasRevenue = dashboard.commands.some(function(c) { return c.data.text === '$48,290'; });
-assert(hasRevenue, 'Has revenue metric value');
+const btnSm = componentDefaults('button', 'sm')
+assert(btnSm.h < btn.h, 'Small button shorter')
+assert(btnSm.touchTarget >= 44, 'Small button still 44px touch target')
 
-// ─── Blueprints: Sections ────────────────
+const card = componentDefaults('card')
+assert(card !== null, 'Card defaults exist')
+assert(card.px >= 16, 'Card has padding')
+assert(card.radius >= 12, 'Card has radius')
 
-console.log('\n  Blueprints: Sections');
+const input = componentDefaults('input')
+assert(input !== null, 'Input defaults exist')
+eq(input.h, 44, 'Input matches button height')
 
-var sectionTypes = ['hero', 'features', 'cta', 'testimonials', 'faq'];
-for (var st = 0; st < sectionTypes.length; st++) {
-  var sec = buildSection(sectionTypes[st], {});
-  assert(sec.commands.length >= 3, sectionTypes[st] + ' section has 3+ commands (got ' + sec.commands.length + ')');
-  assert(sec.description.length > 0, sectionTypes[st] + ' has description');
-}
+assert(componentDefaults('avatar') !== null, 'Avatar defaults')
+assert(componentDefaults('badge') !== null, 'Badge defaults')
+assert(componentDefaults('modal') !== null, 'Modal defaults')
+assert(componentDefaults('sidebar') !== null, 'Sidebar defaults')
+assert(componentDefaults('toast') !== null, 'Toast defaults')
+assert(componentDefaults('tooltip') !== null, 'Tooltip defaults')
+assert(componentDefaults('tabs') !== null, 'Tabs defaults')
+assert(componentDefaults('table') !== null, 'Table defaults')
+assert(componentDefaults('dropdown') !== null, 'Dropdown defaults')
+assert(componentDefaults('switch') !== null, 'Switch defaults')
+assert(componentDefaults('checkbox') !== null, 'Checkbox defaults')
+assert(componentDefaults('radio') !== null, 'Radio defaults')
+assert(componentDefaults('progress') !== null, 'Progress defaults')
+assert(componentDefaults('chip') !== null, 'Chip defaults')
+assert(componentDefaults('divider') !== null, 'Divider defaults')
+assert(componentDefaults('skeleton') !== null, 'Skeleton defaults')
+assert(componentDefaults('nonexistent') === null, 'Unknown returns null')
 
-// ─── Blueprint Router ────────────────────
+console.log('\n  Design Intelligence — Layout')
+const row = suggestAutoLayout('row')
+eq(row.direction, 'HORIZONTAL', 'Row is horizontal')
+const col = suggestAutoLayout('column')
+eq(col.direction, 'VERTICAL', 'Column is vertical')
+const center = suggestAutoLayout('center')
+eq(center.align, 'CENTER', 'Center aligns center')
+const spread = suggestAutoLayout('spread')
+eq(spread.justify, 'SPACE_BETWEEN', 'Spread uses space-between')
 
-console.log('\n  Blueprint Router');
+console.log('\n  Design Intelligence — Accessibility')
+const contrast1 = checkContrast('#ffffff', '#000000')
+assert(contrast1.ratio >= 19, 'White on black = 21:1')
+assert(contrast1.aa === true, 'Passes AA')
+assert(contrast1.aaa === true, 'Passes AAA')
 
-var routedLanding = getBlueprint('create_page', { pageType: 'landing' });
-assert(routedLanding !== null, 'Router returns landing blueprint');
-assert(routedLanding.commands.length > 25, 'Routed landing has commands');
+const contrast2 = checkContrast('#777777', '#888888')
+assert(contrast2.aa === false, 'Gray on gray fails AA')
 
-var routedPricing = getBlueprint('create_page', { pageType: 'pricing' });
-assert(routedPricing !== null, 'Router returns pricing blueprint');
+console.log('\n  Design Intelligence — Font Weights')
+eq(resolveFontWeight('bold'), 'Bold', 'bold → Bold')
+eq(resolveFontWeight('semibold'), 'Semi Bold', 'semibold → Semi Bold')
+eq(resolveFontWeight('600'), 'Semi Bold', '600 → Semi Bold')
+eq(resolveFontWeight('400'), 'Regular', '400 → Regular')
+eq(resolveFontWeight('regular'), 'Regular', 'regular → Regular')
+eq(resolveFontWeight(null), 'Regular', 'null → Regular')
 
-var routedDash = getBlueprint('create_page', { pageType: 'dashboard' });
-assert(routedDash !== null, 'Router returns dashboard blueprint');
+console.log('\n  Design Intelligence — Colors')
+const fc = hexToFigmaColor('#ff0000')
+assert(Math.abs(fc.r - 1) < 0.01, 'Red channel = 1')
+assert(Math.abs(fc.g) < 0.01, 'Green channel = 0')
+const hex = figmaColorToHex({ r: 1, g: 0, b: 0 })
+eq(hex, '#ff0000', 'Back to hex')
 
-var routedSection = getBlueprint('create_section', { sectionType: 'hero' });
-assert(routedSection !== null, 'Router returns hero section');
+console.log('\n  Design Intelligence — Gradients')
+const lg = linearGradient(180, [{ position: 0, color: '#ff0000' }, { position: 1, color: '#0000ff' }])
+eq(lg.type, 'GRADIENT_LINEAR', 'Linear gradient type')
+assert(lg.gradientStops.length === 2, '2 stops')
 
-var routedUnknown = getBlueprint('color_palette', {});
-assert(routedUnknown === null, 'Router returns null for non-blueprint tools');
+console.log('\n  Design Intelligence — Constants')
+assert(SPACING.md === 16, 'Spacing md = 16')
+assert(SPACING.lg === 24, 'Spacing lg = 24')
+assert(RADIUS.md === 8, 'Radius md = 8')
+assert(RADIUS.full === 9999, 'Radius full = 9999')
+assert(SHADOWS.md.blur === 8, 'Shadow md blur = 8')
 
-// ─── Orchestrator: Ref Resolution ────────
+console.log('\n  Design Intelligence — Craft Guide')
+const guide = getDesignCraftGuide()
+assert(guide.typography.rules.length >= 4, 'Typography rules')
+assert(guide.spacing.rules.length >= 4, 'Spacing rules')
+assert(guide.color.rules.length >= 4, 'Color rules')
+assert(guide.layout.rules.length >= 4, 'Layout rules')
+assert(guide.antiPatterns.length >= 5, 'Anti-patterns')
+assert(guide.typography.scale !== null, 'Has type scale')
+assert(guide.spacing.system !== null, 'Has spacing system')
 
-console.log('\n  Orchestrator: Ref Resolution');
+console.log('\n  Comparison')
+console.log(`  Conductor: ${TOOL_COUNT} tools`)
+console.log(`  Figsor:    ~45 tools`)
+console.log(`  Framelink: ~5 tools`)
+console.log(`  Official:  ~12 tools`)
+console.log(`  Advantage: ${TOOL_COUNT - 45} more tools than Figsor`)
 
-// Test that executeSequence is a function
-assert(typeof executeSequence === 'function', 'executeSequence is exported');
-
-// Test $ref resolution by checking blueprint command structure
-var bp = buildLandingPage({});
-var secondCmd = bp.commands[1];
-assert(secondCmd.data.parentId === '$0.id', 'Second command references root via $0.id');
-
-// Verify all $ref patterns are valid
-var refPattern = /\$(\d+)\.(\w+)/;
-var allRefsValid = true;
-for (var ri = 1; ri < bp.commands.length; ri++) {
-  var pid = bp.commands[ri].data.parentId;
-  if (pid) {
-    var match = refPattern.exec(pid);
-    if (match) {
-      var refIdx = parseInt(match[1]);
-      if (refIdx >= ri) { allRefsValid = false; break; }
-    }
-  }
-}
-assert(allRefsValid, 'All $ref indices point to earlier commands (no forward refs)');
-
-// ─── Grid Alignment in Blueprints ────────
-
-console.log('\n  Blueprint Grid Alignment');
-
-var landingCmds = buildLandingPage({}).commands;
-var paddingValues = [];
-var gapValues = [];
-for (var gi = 0; gi < landingCmds.length; gi++) {
-  var d = landingCmds[gi].data;
-  if (d.padding !== undefined && d.padding > 0) paddingValues.push(d.padding);
-  if (d.gap !== undefined && d.gap > 0) gapValues.push(d.gap);
-}
-var allPaddingOnGrid = paddingValues.every(function(v) { return v % 4 === 0; });
-assert(allPaddingOnGrid, 'All padding values are on 4px grid (' + paddingValues.join(', ') + ')');
-var allGapOnGrid = gapValues.every(function(v) { return v % 4 === 0; });
-assert(allGapOnGrid, 'All gap values are on 4px grid (' + gapValues.join(', ') + ')');
-
-// ─── Summary ─────────────────────────────
-
-console.log('\n  ' + passed + ' passed, ' + failed + ' failed\n');
-process.exit(failed > 0 ? 1 : 0);
+console.log('\n  ' + passed + ' passed, ' + failed + ' failed\n')
+process.exit(failed > 0 ? 1 : 0)

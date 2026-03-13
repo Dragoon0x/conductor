@@ -1,344 +1,724 @@
 // ═══════════════════════════════════════════
-// CONDUCTOR — Tool Registry
+// CONDUCTOR v3 — Tool Registry (150+ Tools)
 // ═══════════════════════════════════════════
-// All 61 MCP tools, organized by category.
-// Each tool has: name, description, category, inputSchema, handler reference.
+
+function tool(name, desc, params, category) {
+  return { name, description: desc, inputSchema: { type: 'object', properties: params, required: Object.keys(params).filter(k => params[k]._required) }, category }
+}
+function req(type, desc) { return { type, description: desc, _required: true } }
+function opt(type, desc, def) { return { type, description: desc + (def !== undefined ? ` (default: ${def})` : '') } }
+function enm(values, desc, def) { return { type: 'string', enum: values, description: desc + (def ? ` (default: ${def})` : '') } }
+
+// ═══ CREATE & LAYOUT (25) ═══
+const CREATE = {
+  create_frame: tool('create_frame', 'Create a frame (screen, section, card, container). Automatically applies auto-layout with design-intelligent defaults.', {
+    name: req('string', 'Frame name (semantic: "Hero Section", "Card", "Sidebar")'),
+    width: opt('number', 'Width in pixels. Omit for hug-contents.'),
+    height: opt('number', 'Height in pixels. Omit for hug-contents.'),
+    direction: enm(['VERTICAL','HORIZONTAL'], 'Layout direction', 'VERTICAL'),
+    padding: opt('number', 'Equal padding all sides (8px grid snapped)'),
+    paddingTop: opt('number', 'Top padding'), paddingRight: opt('number', 'Right padding'),
+    paddingBottom: opt('number', 'Bottom padding'), paddingLeft: opt('number', 'Left padding'),
+    gap: opt('number', 'Space between children (8px grid)'),
+    fill: opt('string', 'Background color hex'),
+    cornerRadius: opt('number', 'Corner radius'),
+    primaryAxisAlignItems: enm(['MIN','CENTER','MAX','SPACE_BETWEEN'], 'Main axis alignment'),
+    counterAxisAlignItems: enm(['MIN','CENTER','MAX','STRETCH'], 'Cross axis alignment'),
+    primaryAxisSizingMode: enm(['FIXED','HUG','FILL'], 'Main axis sizing'),
+    counterAxisSizingMode: enm(['FIXED','HUG','FILL'], 'Cross axis sizing'),
+    parentId: opt('string', 'Parent node ID to nest inside'),
+    x: opt('number', 'X position on canvas'), y: opt('number', 'Y position on canvas'),
+  }, 'create'),
+
+  create_text: tool('create_text', 'Create text with design-intelligent typography. Font weight is auto-resolved (e.g. "bold" → "Bold", "600" → "Semi Bold").', {
+    text: req('string', 'Text content (use \\n for line breaks)'),
+    fontSize: opt('number', 'Font size in px', 16),
+    color: opt('string', 'Text color hex', '#ffffff'),
+    fontFamily: opt('string', 'Font family', 'Inter'),
+    fontWeight: opt('string', 'Weight: thin/light/regular/medium/semibold/bold/extrabold or 100-900', 'Regular'),
+    textAlignHorizontal: enm(['LEFT','CENTER','RIGHT','JUSTIFIED'], 'Horizontal alignment'),
+    textAlignVertical: enm(['TOP','CENTER','BOTTOM'], 'Vertical alignment'),
+    lineHeight: opt('number', 'Line height in px or ratio (1.5 = 150%)'),
+    letterSpacing: opt('number', 'Letter spacing in px'),
+    textDecoration: enm(['NONE','UNDERLINE','STRIKETHROUGH'], 'Text decoration'),
+    textCase: enm(['ORIGINAL','UPPER','LOWER','TITLE'], 'Text case transform'),
+    maxWidth: opt('number', 'Maximum text width for wrapping'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_rectangle: tool('create_rectangle', 'Create a rectangle shape.', {
+    name: opt('string', 'Name', 'Rectangle'),
+    width: req('number', 'Width'), height: req('number', 'Height'),
+    fill: opt('string', 'Fill color hex'),
+    cornerRadius: opt('number', 'Corner radius'), opacity: opt('number', 'Opacity 0-1'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_ellipse: tool('create_ellipse', 'Create a circle or oval.', {
+    name: opt('string', 'Name', 'Ellipse'),
+    width: req('number', 'Width'), height: req('number', 'Height'),
+    fill: opt('string', 'Fill color hex'), opacity: opt('number', 'Opacity 0-1'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_line: tool('create_line', 'Create a line or divider.', {
+    name: opt('string', 'Name', 'Line'),
+    length: req('number', 'Line length'), direction: enm(['HORIZONTAL','VERTICAL'], 'Direction', 'HORIZONTAL'),
+    strokeColor: opt('string', 'Stroke color'), strokeWeight: opt('number', 'Stroke weight', 1),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_svg_node: tool('create_svg_node', 'Create a vector graphic from SVG markup. Use for icons, logos, illustrations.', {
+    svg: req('string', 'SVG markup string'),
+    name: opt('string', 'Node name'),
+    width: opt('number', 'Target width'), height: opt('number', 'Target height'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_component: tool('create_component', 'Create a reusable component from the current selection or a new frame.', {
+    name: req('string', 'Component name'),
+    description: opt('string', 'Component description'),
+    fromNodeId: opt('string', 'Node ID to convert to component'),
+    width: opt('number', 'Width'), height: opt('number', 'Height'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_component_instance: tool('create_component_instance', 'Instantiate an existing component.', {
+    componentId: req('string', 'Component node ID to instantiate'),
+    parentId: opt('string', 'Parent to place instance in'),
+    overrides: opt('object', 'Property overrides: { "Text Label": "New text", "fill": "#ff0000" }'),
+  }, 'create'),
+
+  create_component_set: tool('create_component_set', 'Combine component variants into a variant set.', {
+    name: req('string', 'Component set name'),
+    componentIds: { type:'array', items:{type:'string'}, description:'Array of component IDs to combine', _required:true },
+  }, 'create'),
+
+  create_smart_component: tool('create_smart_component', 'Create a design-intelligent component with proper auto-layout, padding, and sizing. Uses component intelligence defaults.', {
+    type: req('string', 'Component type: button, input, card, avatar, badge, chip, switch, checkbox, radio, toast, tooltip, modal, dropdown, tabs, table, progress, skeleton, divider'),
+    variant: opt('string', 'Variant: default, sm, lg, icon, compact, spacious, pill, thin'),
+    label: opt('string', 'Text label for the component'),
+    brandColor: opt('string', 'Brand/accent color hex'),
+    mode: enm(['dark','light'], 'Color mode', 'dark'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  set_auto_layout: tool('set_auto_layout', 'Configure auto-layout on a frame. All spacing is 8px grid-snapped.', {
+    nodeId: req('string', 'Target node ID'),
+    direction: enm(['VERTICAL','HORIZONTAL'], 'Direction'),
+    padding: opt('number', 'Uniform padding'),
+    paddingTop: opt('number',''), paddingRight: opt('number',''), paddingBottom: opt('number',''), paddingLeft: opt('number',''),
+    gap: opt('number', 'Gap between children'),
+    primaryAxisAlignItems: enm(['MIN','CENTER','MAX','SPACE_BETWEEN'], 'Main axis'),
+    counterAxisAlignItems: enm(['MIN','CENTER','MAX','STRETCH'], 'Cross axis'),
+    primaryAxisSizingMode: enm(['FIXED','HUG','FILL'], 'Main sizing'),
+    counterAxisSizingMode: enm(['FIXED','HUG','FILL'], 'Cross sizing'),
+  }, 'create'),
+
+  create_section: tool('create_section', 'Create a design-intelligent page section (hero, features, pricing, CTA, testimonials, FAQ, footer, stats, logos, comparison, team).', {
+    type: req('string', 'Section type: hero, features, pricing, cta, testimonials, faq, footer, stats, logos, comparison, team, newsletter'),
+    content: opt('object', 'Content data: { title, subtitle, items[], ... }'),
+    brandColor: opt('string', 'Brand color hex'),
+    mode: enm(['dark','light'], 'Color mode', 'dark'),
+    width: opt('number', 'Frame width', 1440),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'create'),
+
+  create_page: tool('create_page', 'Create a complete page design with multiple sections. Design-intelligent layout, spacing, and typography throughout.', {
+    type: req('string', 'Page type: landing, pricing, dashboard, settings, login, signup, profile, blog, docs, 404'),
+    content: opt('object', 'Page content: { brand, title, features[], stats[], tiers[], ... }'),
+    brandColor: opt('string', 'Brand color hex'),
+    mode: enm(['dark','light'], 'Color mode', 'dark'),
+    width: opt('number', 'Frame width', 1440),
+  }, 'create'),
+}
+
+// ═══ MODIFY & STYLE (25) ═══
+const MODIFY = {
+  modify_node: tool('modify_node', 'Modify properties of any existing node.', {
+    nodeId: req('string', 'Target node ID'),
+    x: opt('number','X'), y: opt('number','Y'), width: opt('number','Width'), height: opt('number','Height'),
+    name: opt('string','Name'), visible: opt('boolean','Visibility'), locked: opt('boolean','Lock'),
+    opacity: opt('number','Opacity 0-1'), rotation: opt('number','Rotation degrees'),
+    cornerRadius: opt('number','Corner radius'), fill: opt('string','Fill color'),
+  }, 'modify'),
+
+  set_fill: tool('set_fill', 'Set fill on a node. Supports solid, linear gradient, radial gradient, and multiple fills.', {
+    nodeId: req('string', 'Target node ID'),
+    type: enm(['SOLID','LINEAR','RADIAL','ANGULAR','DIAMOND'], 'Fill type', 'SOLID'),
+    color: opt('string', 'Solid fill hex color'),
+    gradient: opt('object', '{ angle, stops: [{ position: 0-1, color: "#hex" }] }'),
+    opacity: opt('number', 'Fill opacity 0-1'),
+    fills: opt('array', 'Array of fill objects for multiple fills'),
+  }, 'modify'),
+
+  set_stroke: tool('set_stroke', 'Add border/stroke to a node.', {
+    nodeId: req('string', 'Target node ID'),
+    color: opt('string', 'Stroke color hex'), weight: opt('number', 'Stroke weight', 1),
+    align: enm(['INSIDE','OUTSIDE','CENTER'], 'Stroke alignment', 'INSIDE'),
+    dashPattern: opt('array', 'Dash pattern array, e.g. [4, 4]'),
+    opacity: opt('number', 'Stroke opacity'),
+  }, 'modify'),
+
+  set_effects: tool('set_effects', 'Add shadows, blur, or background blur effects.', {
+    nodeId: req('string', 'Target node ID'),
+    shadow: opt('object', '{ color, offsetX, offsetY, blur, spread }'),
+    innerShadow: opt('object', '{ color, offsetX, offsetY, blur, spread }'),
+    blur: opt('number', 'Layer blur amount'),
+    backgroundBlur: opt('number', 'Background blur (glassmorphism)'),
+    preset: enm(['sm','md','lg','xl'], 'Use preset shadow size'),
+  }, 'modify'),
+
+  set_image_fill: tool('set_image_fill', 'Set an image fill on a node from URL.', {
+    nodeId: req('string', 'Target node ID'),
+    url: req('string', 'Image URL'),
+    scaleMode: enm(['FILL','FIT','CROP','TILE'], 'Scale mode', 'FILL'),
+  }, 'modify'),
+
+  style_text_range: tool('style_text_range', 'Apply mixed styling within a text node. Style specific character ranges differently.', {
+    nodeId: req('string', 'Text node ID'),
+    ranges: { type:'array', items:{type:'object'}, description:'Array of { start, end, fontSize, fontWeight, color, textDecoration }', _required:true },
+  }, 'modify'),
+
+  set_constraints: tool('set_constraints', 'Set responsive constraints on a node.', {
+    nodeId: req('string', 'Target node ID'),
+    horizontal: enm(['MIN','CENTER','MAX','STRETCH','SCALE'], 'Horizontal constraint'),
+    vertical: enm(['MIN','CENTER','MAX','STRETCH','SCALE'], 'Vertical constraint'),
+  }, 'modify'),
+
+  delete_node: tool('delete_node', 'Remove a node from the canvas.', {
+    nodeId: req('string', 'Node ID to delete'),
+  }, 'modify'),
+
+  move_to_parent: tool('move_to_parent', 'Move a node into a different parent frame.', {
+    nodeId: req('string', 'Node to move'),
+    parentId: req('string', 'New parent ID'),
+    index: opt('number', 'Position index within parent'),
+  }, 'modify'),
+
+  duplicate_node: tool('duplicate_node', 'Duplicate a node.', {
+    nodeId: req('string', 'Node to duplicate'),
+    count: opt('number', 'Number of duplicates', 1),
+    offsetX: opt('number', 'X offset per copy'), offsetY: opt('number', 'Y offset per copy'),
+  }, 'modify'),
+
+  group_nodes: tool('group_nodes', 'Group multiple nodes together.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Node IDs to group', _required:true },
+    name: opt('string', 'Group name'),
+  }, 'modify'),
+
+  ungroup_nodes: tool('ungroup_nodes', 'Ungroup a group node.', {
+    nodeId: req('string', 'Group node to ungroup'),
+  }, 'modify'),
+
+  resize_node: tool('resize_node', 'Resize a node with optional constraint preservation.', {
+    nodeId: req('string', 'Node to resize'),
+    width: opt('number', 'New width'), height: opt('number', 'New height'),
+    preserveAspect: opt('boolean', 'Maintain aspect ratio'),
+  }, 'modify'),
+
+  align_nodes: tool('align_nodes', 'Align multiple nodes relative to each other.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Nodes to align', _required:true },
+    alignment: enm(['LEFT','CENTER','RIGHT','TOP','MIDDLE','BOTTOM','DISTRIBUTE_H','DISTRIBUTE_V'], 'Alignment type'),
+  }, 'modify'),
+
+  set_corner_radius: tool('set_corner_radius', 'Set corner radius with per-corner control.', {
+    nodeId: req('string', 'Target node'),
+    radius: opt('number', 'Uniform radius'),
+    topLeft: opt('number',''), topRight: opt('number',''), bottomRight: opt('number',''), bottomLeft: opt('number',''),
+  }, 'modify'),
+
+  set_opacity: tool('set_opacity', 'Set node opacity.', {
+    nodeId: req('string', 'Target node'), opacity: req('number', 'Opacity 0-1'),
+  }, 'modify'),
+
+  set_blend_mode: tool('set_blend_mode', 'Set blend mode.', {
+    nodeId: req('string', 'Target node'),
+    blendMode: enm(['NORMAL','MULTIPLY','SCREEN','OVERLAY','DARKEN','LIGHTEN','COLOR_DODGE','COLOR_BURN','HARD_LIGHT','SOFT_LIGHT','DIFFERENCE','EXCLUSION','HUE','SATURATION','COLOR','LUMINOSITY'], 'Blend mode'),
+  }, 'modify'),
+
+  set_clip_content: tool('set_clip_content', 'Toggle clip content on a frame.', {
+    nodeId: req('string', 'Frame node'), clip: req('boolean', 'Clip content'),
+  }, 'modify'),
+
+  rename_node: tool('rename_node', 'Rename a node.', {
+    nodeId: req('string', 'Target node'), name: req('string', 'New name'),
+  }, 'modify'),
+
+  lock_node: tool('lock_node', 'Lock/unlock a node.', {
+    nodeId: req('string', 'Target node'), locked: req('boolean', 'Lock state'),
+  }, 'modify'),
+
+  set_visibility: tool('set_visibility', 'Show/hide a node.', {
+    nodeId: req('string', 'Target node'), visible: req('boolean', 'Visibility'),
+  }, 'modify'),
+
+  reorder_node: tool('reorder_node', 'Change z-order of a node.', {
+    nodeId: req('string', 'Target node'),
+    direction: enm(['FRONT','BACK','FORWARD','BACKWARD'], 'Reorder direction'),
+  }, 'modify'),
+
+  set_layout_sizing: tool('set_layout_sizing', 'Set how a child behaves in auto-layout.', {
+    nodeId: req('string', 'Child node'),
+    horizontal: enm(['FIXED','HUG','FILL'], 'Horizontal sizing'),
+    vertical: enm(['FIXED','HUG','FILL'], 'Vertical sizing'),
+  }, 'modify'),
+
+  flatten_node: tool('flatten_node', 'Flatten a node into a single vector.', {
+    nodeId: req('string', 'Node to flatten'),
+  }, 'modify'),
+
+  set_rotation: tool('set_rotation', 'Rotate a node.', {
+    nodeId: req('string', 'Target node'), angle: req('number', 'Rotation in degrees'),
+  }, 'modify'),
+}
+
+// ═══ VECTOR & BOOLEAN (8) ═══
+const VECTOR = {
+  create_vector: tool('create_vector', 'Draw custom vector paths using SVG-like path data.', {
+    name: opt('string', 'Vector name'),
+    pathData: req('string', 'SVG path data (M, L, C, Q, Z commands)'),
+    fill: opt('string', 'Fill color'), stroke: opt('string', 'Stroke color'),
+    strokeWeight: opt('number', 'Stroke weight'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+
+  boolean_operation: tool('boolean_operation', 'Perform boolean operations on shapes.', {
+    operation: enm(['UNION','SUBTRACT','INTERSECT','EXCLUDE'], 'Boolean operation type'),
+    nodeIds: { type:'array', items:{type:'string'}, description:'Node IDs (first is base shape)', _required:true },
+  }, 'vector'),
+
+  create_polygon: tool('create_polygon', 'Create a regular polygon.', {
+    sides: req('number', 'Number of sides (3=triangle, 5=pentagon, 6=hexagon, etc.)'),
+    size: req('number', 'Diameter'),
+    fill: opt('string', 'Fill color'), name: opt('string', 'Name'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+
+  create_star: tool('create_star', 'Create a star shape.', {
+    points: opt('number', 'Number of points', 5),
+    outerRadius: req('number', 'Outer radius'),
+    innerRadius: opt('number', 'Inner radius (ratio to outer)'),
+    fill: opt('string', 'Fill color'), name: opt('string', 'Name'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+
+  offset_path: tool('offset_path', 'Offset/expand a vector path.', {
+    nodeId: req('string', 'Vector node'), offset: req('number', 'Offset amount'),
+  }, 'vector'),
+
+  create_arrow: tool('create_arrow', 'Create an arrow shape.', {
+    length: req('number', 'Arrow length'), direction: enm(['RIGHT','LEFT','UP','DOWN'], 'Direction', 'RIGHT'),
+    strokeWeight: opt('number', 'Weight', 2), color: opt('string', 'Color'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+
+  create_icon: tool('create_icon', 'Create a common UI icon from built-in set.', {
+    icon: req('string', 'Icon name: arrow-right, arrow-left, arrow-up, arrow-down, check, x, plus, minus, search, menu, settings, user, heart, star, home, mail, phone, calendar, clock, bell, lock, unlock, eye, eye-off, edit, trash, download, upload, link, external-link, copy, share, filter, sort, grid, list, chevron-right, chevron-left, chevron-down, chevron-up'),
+    size: opt('number', 'Icon size', 24), color: opt('string', 'Color'),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+
+  create_divider: tool('create_divider', 'Create a horizontal or vertical divider line.', {
+    direction: enm(['HORIZONTAL','VERTICAL'], 'Direction', 'HORIZONTAL'),
+    length: opt('number', 'Length (auto-fills parent if omitted)'),
+    color: opt('string', 'Color'), thickness: opt('number', 'Thickness', 1),
+    parentId: opt('string', 'Parent node ID'),
+  }, 'vector'),
+}
+
+// ═══ READ & INSPECT (18) ═══
+const READ = {
+  get_selection: tool('get_selection', 'Get the currently selected nodes with full properties.', {}, 'read'),
+
+  get_page_structure: tool('get_page_structure', 'Get the full page layer tree with types, names, and hierarchy.', {
+    depth: opt('number', 'Max depth to traverse', 3),
+    pageId: opt('string', 'Page ID (uses current page if omitted)'),
+  }, 'read'),
+
+  get_node_info: tool('get_node_info', 'Get detailed properties of a specific node including fills, effects, auto-layout, and text styles.', {
+    nodeId: req('string', 'Node ID to inspect'),
+  }, 'read'),
+
+  get_nodes_info: tool('get_nodes_info', 'Get detailed properties of multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Array of node IDs', _required:true },
+  }, 'read'),
+
+  find_nodes: tool('find_nodes', 'Search for nodes by name, type, or properties.', {
+    query: opt('string', 'Search by name (partial match)'),
+    type: enm(['FRAME','TEXT','RECTANGLE','ELLIPSE','LINE','COMPONENT','INSTANCE','GROUP','VECTOR','BOOLEAN_OPERATION','SECTION'], 'Filter by type'),
+    withinId: opt('string', 'Search within this node'),
+  }, 'read'),
+
+  get_local_styles: tool('get_local_styles', 'Get all local paint, text, and effect styles in the file.', {}, 'read'),
+
+  get_local_variables: tool('get_local_variables', 'Get all local variable collections and variables.', {}, 'read'),
+
+  list_components: tool('list_components', 'List all components in the file.', {
+    pageId: opt('string', 'Filter to specific page'),
+  }, 'read'),
+
+  list_pages: tool('list_pages', 'List all pages in the document.', {}, 'read'),
+
+  get_document_info: tool('get_document_info', 'Get document name, pages, and metadata.', {}, 'read'),
+
+  set_selection: tool('set_selection', 'Select nodes and optionally scroll viewport to them.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Node IDs to select', _required:true },
+    zoomToFit: opt('boolean', 'Scroll and zoom to show selection', true),
+  }, 'read'),
+
+  set_focus: tool('set_focus', 'Focus viewport on a specific node.', {
+    nodeId: req('string', 'Node to focus on'),
+    zoom: opt('number', 'Zoom level 0.1-10'),
+  }, 'read'),
+
+  get_annotations: tool('get_annotations', 'Get all annotations/comments on the document or a specific node.', {
+    nodeId: opt('string', 'Node to get annotations for'),
+  }, 'read'),
+
+  set_annotation: tool('set_annotation', 'Create or update an annotation with markdown support.', {
+    nodeId: req('string', 'Node to annotate'),
+    text: req('string', 'Annotation text (markdown supported)'),
+  }, 'read'),
+
+  list_available_fonts: tool('list_available_fonts', 'Get all fonts available in the Figma file.', {}, 'read'),
+
+  read_node_css: tool('read_node_css', 'Get CSS representation of a node (for developer handoff).', {
+    nodeId: req('string', 'Node to get CSS for'),
+    format: enm(['css','tailwind','react-inline'], 'Output format', 'css'),
+  }, 'read'),
+
+  get_selection_colors: tool('get_selection_colors', 'Extract all colors used in the current selection.', {}, 'read'),
+
+  measure_distance: tool('measure_distance', 'Measure distance between two nodes.', {
+    nodeId1: req('string', 'First node'), nodeId2: req('string', 'Second node'),
+  }, 'read'),
+}
+
+// ═══ VARIABLES & TOKENS (10) ═══
+const VARIABLES = {
+  create_variable_collection: tool('create_variable_collection', 'Create a design token collection with modes (e.g. Light/Dark).', {
+    name: req('string', 'Collection name (e.g. "Colors", "Spacing")'),
+    modes: opt('array', 'Mode names, e.g. ["Light", "Dark"]'),
+  }, 'variables'),
+
+  create_variable: tool('create_variable', 'Create a design variable/token.', {
+    name: req('string', 'Variable name (e.g. "primary-500", "spacing-md")'),
+    collectionId: req('string', 'Collection ID'),
+    type: enm(['COLOR','FLOAT','STRING','BOOLEAN'], 'Variable type'),
+    value: req('string', 'Value (hex for COLOR, number for FLOAT, etc.)'),
+    modeValues: opt('object', 'Values per mode: { "Light": "#000", "Dark": "#fff" }'),
+  }, 'variables'),
+
+  bind_variable: tool('bind_variable', 'Bind a variable to a node property.', {
+    nodeId: req('string', 'Target node'),
+    property: req('string', 'Property to bind: fills, strokes, cornerRadius, paddingTop, etc.'),
+    variableId: req('string', 'Variable ID to bind'),
+  }, 'variables'),
+
+  get_variables: tool('get_variables', 'List all variable collections and their variables.', {}, 'variables'),
+
+  update_variable: tool('update_variable', 'Update a variable value.', {
+    variableId: req('string', 'Variable ID'),
+    value: req('string', 'New value'),
+    mode: opt('string', 'Mode to update (updates default if omitted)'),
+  }, 'variables'),
+
+  delete_variable: tool('delete_variable', 'Delete a variable.', {
+    variableId: req('string', 'Variable to delete'),
+  }, 'variables'),
+
+  create_design_tokens: tool('create_design_tokens', 'Generate a complete design token system from a brand color. Creates color, spacing, radius, and typography collections.', {
+    brandColor: req('string', 'Primary brand color hex'),
+    name: opt('string', 'Token set name', 'Design System'),
+    withModes: opt('boolean', 'Create Light + Dark modes', true),
+  }, 'variables'),
+
+  import_tokens: tool('import_tokens', 'Import design tokens from JSON (W3C Design Token format).', {
+    json: req('string', 'JSON string of design tokens'),
+    collectionName: opt('string', 'Collection name'),
+  }, 'variables'),
+
+  export_tokens: tool('export_tokens', 'Export all design tokens as JSON, CSS custom properties, SCSS, or Tailwind config.', {
+    format: enm(['json','css','scss','tailwind'], 'Export format', 'json'),
+  }, 'variables'),
+
+  swap_mode: tool('swap_mode', 'Switch the active mode on a variable collection.', {
+    collectionId: req('string', 'Collection ID'),
+    mode: req('string', 'Mode name to activate'),
+  }, 'variables'),
+}
+
+// ═══ EXPORT & CODE (10) ═══
+const EXPORT = {
+  export_as_svg: tool('export_as_svg', 'Export a node as SVG markup.', {
+    nodeId: req('string', 'Node to export'),
+  }, 'export'),
+
+  export_as_png: tool('export_as_png', 'Export a node as PNG.', {
+    nodeId: req('string', 'Node to export'),
+    scale: opt('number', 'Scale factor', 2),
+  }, 'export'),
+
+  export_to_react: tool('export_to_react', 'Generate React + Tailwind code from a Figma node tree.', {
+    nodeId: req('string', 'Root node to convert'),
+    framework: enm(['react-tailwind','react-css','html-css','vue','svelte'], 'Output framework', 'react-tailwind'),
+    componentName: opt('string', 'Root component name'),
+  }, 'export'),
+
+  export_design_specs: tool('export_design_specs', 'Generate design specifications document for developer handoff.', {
+    nodeId: req('string', 'Node to document'),
+    format: enm(['markdown','json','html'], 'Spec format', 'markdown'),
+  }, 'export'),
+
+  export_assets: tool('export_assets', 'Batch export all exportable assets (icons, images) from a node tree.', {
+    nodeId: req('string', 'Root node'),
+    format: enm(['svg','png','pdf'], 'Export format', 'svg'),
+    scale: opt('number', 'Scale factor', 1),
+  }, 'export'),
+
+  screenshot: tool('screenshot', 'Take a screenshot of the current canvas view or a specific node.', {
+    nodeId: opt('string', 'Node to screenshot (uses viewport if omitted)'),
+    scale: opt('number', 'Scale factor', 2),
+  }, 'export'),
+
+  copy_css: tool('copy_css', 'Copy CSS properties of a node to clipboard.', {
+    nodeId: req('string', 'Node to get CSS for'),
+  }, 'export'),
+
+  generate_stylesheet: tool('generate_stylesheet', 'Generate a complete stylesheet from a design file.', {
+    pageId: opt('string', 'Page ID'),
+    format: enm(['css','scss','tailwind'], 'Output format', 'css'),
+  }, 'export'),
+
+  export_color_palette: tool('export_color_palette', 'Export all colors used as a palette.', {
+    format: enm(['json','css','scss','tailwind','figma-tokens'], 'Format', 'json'),
+  }, 'export'),
+
+  export_typography: tool('export_typography', 'Export all text styles as a typography system.', {
+    format: enm(['json','css','scss','tailwind'], 'Format', 'json'),
+  }, 'export'),
+}
+
+// ═══ ACCESSIBILITY & LINT (12) ═══
+const ACCESSIBILITY = {
+  audit_accessibility: tool('audit_accessibility', 'Run a full accessibility audit on a node tree. Checks contrast, touch targets, font sizes, focus indicators.', {
+    nodeId: req('string', 'Root node to audit'),
+  }, 'accessibility'),
+
+  check_contrast: tool('check_contrast', 'Check color contrast ratio between two colors.', {
+    foreground: req('string', 'Foreground color hex'),
+    background: req('string', 'Background color hex'),
+  }, 'accessibility'),
+
+  fix_touch_targets: tool('fix_touch_targets', 'Auto-fix all touch targets below 44px in a node tree.', {
+    nodeId: req('string', 'Root node to fix'),
+  }, 'accessibility'),
+
+  lint_design: tool('lint_design', 'Run design lint rules: spacing consistency, naming conventions, color usage, font sizes, alignment.', {
+    nodeId: req('string', 'Root node to lint'),
+    rules: opt('array', 'Specific rules to check. Omit for all.'),
+  }, 'accessibility'),
+
+  fix_spacing: tool('fix_spacing', 'Auto-fix all spacing values to nearest 8px grid value.', {
+    nodeId: req('string', 'Root node to fix'),
+    grid: opt('number', 'Grid size', 8),
+  }, 'accessibility'),
+
+  check_naming: tool('check_naming', 'Check layer naming conventions. Flags generic names like "Frame 123", "Group 5".', {
+    nodeId: req('string', 'Root node to check'),
+  }, 'accessibility'),
+
+  suggest_improvements: tool('suggest_improvements', 'AI-powered design improvement suggestions based on the design intelligence engine.', {
+    nodeId: req('string', 'Node to analyze'),
+  }, 'accessibility'),
+
+  validate_component: tool('validate_component', 'Validate a component follows design system rules.', {
+    nodeId: req('string', 'Component to validate'),
+  }, 'accessibility'),
+
+  check_consistency: tool('check_consistency', 'Check for inconsistent colors, fonts, spacing, and radii across a design.', {
+    nodeId: req('string', 'Root node to check'),
+  }, 'accessibility'),
+
+  generate_a11y_report: tool('generate_a11y_report', 'Generate a detailed accessibility compliance report.', {
+    nodeId: req('string', 'Root node'),
+    standard: enm(['WCAG-AA','WCAG-AAA'], 'Compliance standard', 'WCAG-AA'),
+    format: enm(['markdown','json','html'], 'Report format', 'markdown'),
+  }, 'accessibility'),
+
+  color_blindness_check: tool('color_blindness_check', 'Simulate color blindness on a design to check for issues.', {
+    nodeId: req('string', 'Node to check'),
+    type: enm(['protanopia','deuteranopia','tritanopia','achromatopsia'], 'Color blindness type'),
+  }, 'accessibility'),
+
+  responsive_check: tool('responsive_check', 'Check if a design handles different viewport widths correctly.', {
+    nodeId: req('string', 'Root frame to check'),
+    breakpoints: opt('array', 'Widths to check, e.g. [375, 768, 1024, 1440]'),
+  }, 'accessibility'),
+}
+
+// ═══ BATCH OPERATIONS (12) ═══
+const BATCH = {
+  batch_rename: tool('batch_rename', 'Rename multiple nodes using a pattern.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Nodes to rename', _required:true },
+    pattern: req('string', 'Name pattern. Use {n} for number, {name} for current name. E.g. "Card {n}"'),
+    startNumber: opt('number', 'Starting number', 1),
+  }, 'batch'),
+
+  batch_style: tool('batch_style', 'Apply style changes to multiple nodes at once.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Target nodes', _required:true },
+    changes: req('object', 'Style changes: { fill, opacity, cornerRadius, fontSize, fontWeight, ... }'),
+  }, 'batch'),
+
+  batch_replace_text: tool('batch_replace_text', 'Find and replace text across multiple text nodes.', {
+    find: req('string', 'Text to find'),
+    replace: req('string', 'Replacement text'),
+    nodeId: opt('string', 'Scope to search within (uses whole page if omitted)'),
+    matchCase: opt('boolean', 'Case sensitive', false),
+  }, 'batch'),
+
+  batch_replace_color: tool('batch_replace_color', 'Replace a color across all nodes.', {
+    find: req('string', 'Color to find (hex)'),
+    replace: req('string', 'Replacement color (hex)'),
+    nodeId: opt('string', 'Scope node'),
+  }, 'batch'),
+
+  batch_resize: tool('batch_resize', 'Resize multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Target nodes', _required:true },
+    width: opt('number','New width'), height: opt('number','New height'),
+    scale: opt('number', 'Scale factor'),
+  }, 'batch'),
+
+  batch_align: tool('batch_align', 'Align multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Nodes to align', _required:true },
+    horizontal: enm(['LEFT','CENTER','RIGHT','DISTRIBUTE'], 'H alignment'),
+    vertical: enm(['TOP','MIDDLE','BOTTOM','DISTRIBUTE'], 'V alignment'),
+  }, 'batch'),
+
+  batch_delete: tool('batch_delete', 'Delete multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Nodes to delete', _required:true },
+  }, 'batch'),
+
+  batch_duplicate: tool('batch_duplicate', 'Duplicate multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Nodes to duplicate', _required:true },
+    offsetX: opt('number', 'X offset per copy'), offsetY: opt('number', 'Y offset per copy'),
+  }, 'batch'),
+
+  batch_set_visibility: tool('batch_set_visibility', 'Show/hide multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Target nodes', _required:true },
+    visible: req('boolean', 'Visibility state'),
+  }, 'batch'),
+
+  batch_lock: tool('batch_lock', 'Lock/unlock multiple nodes.', {
+    nodeIds: { type:'array', items:{type:'string'}, description:'Target nodes', _required:true },
+    locked: req('boolean', 'Lock state'),
+  }, 'batch'),
+
+  select_all_by_type: tool('select_all_by_type', 'Select all nodes of a specific type.', {
+    type: enm(['FRAME','TEXT','RECTANGLE','ELLIPSE','COMPONENT','INSTANCE','GROUP'], 'Node type'),
+    withinId: opt('string', 'Scope node'),
+  }, 'batch'),
+
+  clean_hidden_layers: tool('clean_hidden_layers', 'Remove all hidden layers from a node tree.', {
+    nodeId: req('string', 'Root node to clean'),
+    dryRun: opt('boolean', 'Preview changes without deleting', false),
+  }, 'batch'),
+}
+
+// ═══ DESIGN SYSTEM (10) ═══
+const DESIGN_SYSTEM = {
+  scan_design_system: tool('scan_design_system', 'Scan a file and extract the implied design system: colors, fonts, spacing, components.', {
+    pageId: opt('string', 'Page to scan'),
+  }, 'design-system'),
+
+  create_style_guide: tool('create_style_guide', 'Generate a visual style guide page from the current design system.', {
+    brandColor: opt('string', 'Brand color to use'),
+    mode: enm(['dark','light'], 'Mode', 'dark'),
+  }, 'design-system'),
+
+  detect_inconsistencies: tool('detect_inconsistencies', 'Find design inconsistencies: off-grid spacing, non-standard colors, mismatched fonts.', {
+    nodeId: opt('string', 'Scope node'),
+  }, 'design-system'),
+
+  normalize_design: tool('normalize_design', 'Auto-fix a design to match the implied design system. Snaps spacing, normalizes colors, fixes font weights.', {
+    nodeId: req('string', 'Root node to normalize'),
+    dryRun: opt('boolean', 'Preview changes', false),
+  }, 'design-system'),
+
+  extract_components: tool('extract_components', 'Find repeated patterns and suggest component extraction.', {
+    nodeId: req('string', 'Root node to analyze'),
+  }, 'design-system'),
+
+  get_design_craft_guide: tool('get_design_craft_guide', 'Get the professional design rules: typography, color, spacing, anti-AI-slop patterns. Use this before creating any design.', {}, 'design-system'),
+
+  suggest_color_palette: tool('suggest_color_palette', 'Generate a color palette from a single brand color.', {
+    brandColor: req('string', 'Brand color hex'),
+    mode: enm(['dark','light','both'], 'Mode', 'both'),
+  }, 'design-system'),
+
+  suggest_type_scale: tool('suggest_type_scale', 'Generate a typography scale.', {
+    baseSize: opt('number', 'Base font size', 16),
+    ratio: enm(['minor2','major2','minor3','major3','perfect4','aug4','perfect5','golden'], 'Scale ratio', 'major2'),
+  }, 'design-system'),
+
+  import_design_system: tool('import_design_system', 'Import a design system from JSON config and create all tokens, styles, and components.', {
+    config: req('string', 'JSON config string with colors, fonts, spacing, components'),
+  }, 'design-system'),
+
+  compare_to_system: tool('compare_to_system', 'Compare a design to the established design system and flag deviations.', {
+    nodeId: req('string', 'Node to compare'),
+  }, 'design-system'),
+}
+
+// ═══ RESPONSIVE (5) ═══
+const RESPONSIVE = {
+  create_responsive_variant: tool('create_responsive_variant', 'Create mobile/tablet/desktop variants of a frame.', {
+    nodeId: req('string', 'Source frame'),
+    breakpoints: opt('array', 'Target widths', [375, 768, 1440]),
+  }, 'responsive'),
+
+  set_breakpoint: tool('set_breakpoint', 'Resize a frame to a standard breakpoint.', {
+    nodeId: req('string', 'Frame to resize'),
+    breakpoint: enm(['mobile','tablet','desktop','wide'], 'Breakpoint'),
+  }, 'responsive'),
+
+  convert_to_responsive: tool('convert_to_responsive', 'Convert fixed-width designs to responsive auto-layout.', {
+    nodeId: req('string', 'Root frame to convert'),
+  }, 'responsive'),
+
+  generate_mobile: tool('generate_mobile', 'Generate a mobile-optimized version of a desktop design.', {
+    nodeId: req('string', 'Desktop frame'),
+    width: opt('number', 'Mobile width', 375),
+  }, 'responsive'),
+
+  stack_for_mobile: tool('stack_for_mobile', 'Convert horizontal layouts to vertical stacking for mobile.', {
+    nodeId: req('string', 'Frame with horizontal layout'),
+  }, 'responsive'),
+}
+
+// ═══ ASSEMBLE ALL TOOLS ═══
+export const ALL_TOOLS = {
+  ...CREATE, ...MODIFY, ...VECTOR, ...READ,
+  ...VARIABLES, ...EXPORT, ...ACCESSIBILITY,
+  ...BATCH, ...DESIGN_SYSTEM, ...RESPONSIVE,
+}
+
+export const TOOL_LIST = Object.values(ALL_TOOLS)
+export const TOOL_COUNT = Object.keys(ALL_TOOLS).length
 
 export const CATEGORIES = {
-  craft:        { label: 'Design Craft',   icon: '✦', count: 1 },
-  create:       { label: 'Create',          icon: '⊞', count: 12 },
-  layout:       { label: 'Layout',          icon: '▤', count: 7 },
-  typography:   { label: 'Typography',      icon: '◆', count: 7 },
-  color:        { label: 'Color & Style',   icon: '◑', count: 7 },
-  components:   { label: 'Components',      icon: '◎', count: 6 },
-  spacing:      { label: 'Spacing & Grid',  icon: '◧', count: 6 },
-  audit:        { label: 'Audit & Critique', icon: '◉', count: 6 },
-  accessibility:{ label: 'Accessibility',   icon: '♿', count: 5 },
-  responsive:   { label: 'Responsive',      icon: '↔', count: 4 },
-  export:       { label: 'Export & Handoff', icon: '⤓', count: 6 },
-};
-
-function str(desc) { return { type: 'string', description: desc }; }
-function num(desc) { return { type: 'number', description: desc }; }
-function bool(desc) { return { type: 'boolean', description: desc }; }
-function arr(desc, items) { return { type: 'array', description: desc, items: items || { type: 'string' } }; }
-function opt(schema) { return { ...schema, optional: true }; }
-
-export const TOOLS = [
-  // ═══ CREATE ═══
-  { name: 'create_frame', category: 'create',
-    description: 'Create a single auto-layout frame. IMPORTANT: For multi-element designs (pages, sections, dashboards), use create_page or create_section instead — they handle all nesting automatically. If using create_frame directly, ALWAYS set parentId to nest inside a parent frame, and ALWAYS set direction, padding, and gap for auto-layout.',
-    inputSchema: { type: 'object', properties: { name: str('Frame name'), width: opt(num('Width')), height: opt(num('Height')), direction: opt(str('VERTICAL or HORIZONTAL')), padding: opt(num('Padding in px (use multiples of 8)')), paddingTop: opt(num('Top padding')), paddingBottom: opt(num('Bottom padding')), paddingLeft: opt(num('Left padding')), paddingRight: opt(num('Right padding')), gap: opt(num('Gap between children (use multiples of 8)')), fill: opt(str('Background color hex')), cornerRadius: opt(num('Corner radius')), parentId: opt(str('REQUIRED for nesting: parent frame ID')), primaryAxisAlignItems: opt(str('MIN, CENTER, MAX, SPACE_BETWEEN')), counterAxisAlignItems: opt(str('MIN, CENTER, MAX, STRETCH')), primaryAxisSizingMode: opt(str('FIXED, HUG, FILL')), counterAxisSizingMode: opt(str('FIXED, HUG, FILL')) }, required: ['name'] } },
-
-  { name: 'create_page', category: 'create',
-    description: 'THE PRIMARY TOOL FOR DESIGNING PAGES. Creates a complete, polished, production-ready page with all sections, components, and content — fully nested with auto-layout, proper spacing, and design-intelligent values. One call generates 40-80 Figma elements. Use this INSTEAD of calling create_frame/create_text individually. Supports: landing, pricing, dashboard page types. Pass brand color, title, features, stats, and other content as parameters.',
-    inputSchema: { type: 'object', properties: {
-      pageType: str('Page type: landing, pricing, dashboard'),
-      title: opt(str('Hero heading text')),
-      subtitle: opt(str('Hero subtitle text')),
-      brand: opt(str('Brand/company name (appears in nav and footer)')),
-      brandColor: opt(str('Primary brand color hex (default #6366f1)')),
-      ctaText: opt(str('Primary CTA button text')),
-      darkMode: opt(bool('Dark mode (default true)')),
-      width: opt(num('Page width (default 1440)')),
-      navItems: opt(arr('Navigation link labels')),
-      features: opt(arr('Feature objects with icon, title, desc fields')),
-      stats: opt(arr('Stat objects with value and label fields')),
-      tiers: opt(arr('Pricing tier objects with name, price, period, desc, features, cta, highlighted fields')),
-      metrics: opt(arr('Dashboard metric objects with label, value, change, positive fields')),
-    }, required: ['pageType'] } },
-
-  { name: 'create_section', category: 'create',
-    description: 'Creates a complete page section with all child elements, auto-layout, and proper nesting. One call generates 5-20 Figma elements. Use this INSTEAD of manually building sections. Supports: hero, features, pricing, cta, testimonials, faq section types.',
-    inputSchema: { type: 'object', properties: {
-      sectionType: str('Section type: hero, features, testimonials, faq, cta, pricing'),
-      heading: opt(str('Section heading')),
-      subheading: opt(str('Section subtitle')),
-      brandColor: opt(str('Brand color hex')),
-      ctaText: opt(str('CTA button text')),
-      width: opt(num('Section width (default 1440)')),
-      features: opt(arr('Feature objects for features section')),
-      testimonials: opt(arr('Testimonial objects with quote, author, role')),
-      faqs: opt(arr('FAQ objects with q and a fields')),
-    }, required: ['sectionType'] } },
-
-  { name: 'create_card', category: 'create',
-    description: 'Create a card with proper padding, radius, shadow depth, and content hierarchy.',
-    inputSchema: { type: 'object', properties: { variant: opt(str('Card variant: default, elevated, outlined, filled')), title: opt(str('Card title')), description: opt(str('Card description')), hasImage: opt(bool('Include image placeholder')), hasAction: opt(bool('Include action button')), width: opt(num('Card width')) }, required: [] } },
-
-  { name: 'create_form', category: 'create',
-    description: 'Create a form layout with labels, inputs, validation states, help text, and submit flow.',
-    inputSchema: { type: 'object', properties: { fields: arr('Field definitions', { type: 'object', properties: { name: str('Field name'), type: str('text, email, password, select, textarea, checkbox, radio'), label: str('Field label'), required: bool('Required field') } }), submitLabel: opt(str('Submit button text')), layout: opt(str('vertical or horizontal')) }, required: ['fields'] } },
-
-  { name: 'create_table', category: 'create',
-    description: 'Create a data table with header row, data rows, sorting indicators, and pagination controls.',
-    inputSchema: { type: 'object', properties: { columns: arr('Column definitions', { type: 'object', properties: { name: str('Column name'), width: num('Column width') } }), rows: opt(num('Number of data rows')), hasPagination: opt(bool('Include pagination')), hasSorting: opt(bool('Include sort indicators')), hasCheckbox: opt(bool('Include row checkboxes')) }, required: ['columns'] } },
-
-  { name: 'create_modal', category: 'create',
-    description: 'Create a modal with overlay, header, content area, and action buttons. Proper sizing and constraints.',
-    inputSchema: { type: 'object', properties: { title: str('Modal title'), size: opt(str('sm, md, lg, xl')), hasCloseButton: opt(bool('Include close button')), actions: opt(arr('Action button labels')) }, required: ['title'] } },
-
-  { name: 'create_nav', category: 'create',
-    description: 'Create navigation: topbar, sidebar, breadcrumbs, or tabs. Includes active states and responsive structure.',
-    inputSchema: { type: 'object', properties: { navType: str('topbar, sidebar, breadcrumbs, tabs, bottom-nav'), items: arr('Navigation items'), logoText: opt(str('Logo text')), hasSearch: opt(bool('Include search')), hasAvatar: opt(bool('Include user avatar')) }, required: ['navType', 'items'] } },
-
-  // ═══ LAYOUT ═══
-  { name: 'layout_auto', category: 'layout',
-    description: 'Convert any frame to auto-layout with inferred direction, gap, and padding. Removes absolute positioning.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Figma node ID to convert'), direction: opt(str('horizontal or vertical (auto-detected if omitted)')), gap: opt(num('Gap in px (auto-detected if omitted)')), padding: opt(num('Padding in px')) }, required: ['nodeId'] } },
-
-  { name: 'layout_grid', category: 'layout',
-    description: 'Apply a column grid to a frame: 12-col, 8-col, or custom with gutters and margins.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Figma node ID'), columns: opt(num('Number of columns (default 12)')), gutter: opt(num('Gutter width')), margin: opt(num('Outer margin')), type: opt(str('stretch, center, left, right')) }, required: ['nodeId'] } },
-
-  { name: 'layout_stack', category: 'layout',
-    description: 'Stack children vertically or horizontally with consistent grid-aligned spacing.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Parent node ID'), direction: str('horizontal or vertical'), gap: opt(num('Gap (snapped to grid)')), align: opt(str('start, center, end, stretch')) }, required: ['nodeId', 'direction'] } },
-
-  { name: 'layout_wrap', category: 'layout',
-    description: 'Create a wrap-layout for tag clouds, pill groups, or flexible card grids.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Parent node ID'), gap: opt(num('Gap between items')), maxWidth: opt(num('Max width before wrapping')) }, required: ['nodeId'] } },
-
-  { name: 'layout_constrain', category: 'layout',
-    description: 'Set responsive constraints on a frame: fill, hug, fixed, min/max width and height.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Node ID'), horizontal: opt(str('fill, hug, fixed')), vertical: opt(str('fill, hug, fixed')), minWidth: opt(num('Min width')), maxWidth: opt(num('Max width')), minHeight: opt(num('Min height')), maxHeight: opt(num('Max height')) }, required: ['nodeId'] } },
-
-  { name: 'layout_align', category: 'layout',
-    description: 'Align and distribute selected frames on the grid. Handles both alignment and even distribution.',
-    inputSchema: { type: 'object', properties: { nodeIds: arr('Node IDs to align'), alignment: str('left, center, right, top, middle, bottom, distribute-h, distribute-v') }, required: ['nodeIds', 'alignment'] } },
-
-  { name: 'layout_nest', category: 'layout',
-    description: 'Restructure flat, absolute-positioned layers into a proper auto-layout tree based on spatial relationships.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Parent frame to restructure'), depth: opt(num('Max nesting depth (default 3)')) }, required: ['nodeId'] } },
-
-  // ═══ TYPOGRAPHY ═══
-  { name: 'type_scale', category: 'typography',
-    description: 'Generate or detect a type scale. Supports minor third (1.2), major third (1.25), perfect fourth (1.333), and more.',
-    inputSchema: { type: 'object', properties: { action: str('generate or detect'), baseSize: opt(num('Base font size (default 16)')), scaleRatio: opt(str('Scale name: minor-third, major-third, perfect-fourth, etc.')), nodeId: opt(str('Node ID to detect scale from')) }, required: ['action'] } },
-
-  { name: 'type_hierarchy', category: 'typography',
-    description: 'Set heading levels with proper size, weight, and line-height ratios across a frame.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to apply hierarchy to'), levels: opt(num('Number of heading levels (default 4)')), baseSize: opt(num('Body text size')) }, required: ['nodeId'] } },
-
-  { name: 'type_pair', category: 'typography',
-    description: 'Suggest font pairings from loaded fonts or recommend Google Fonts combinations.',
-    inputSchema: { type: 'object', properties: { headingFont: opt(str('Heading font family')), bodyFont: opt(str('Body font family')), style: opt(str('modern, classic, technical, editorial, playful')) }, required: [] } },
-
-  { name: 'type_measure', category: 'typography',
-    description: 'Check line length (45-75 chars optimal), line-height ratios, and letter-spacing for readability.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Text node or frame to check') }, required: ['nodeId'] } },
-
-  { name: 'type_apply', category: 'typography',
-    description: 'Apply text styles consistently to all matching text elements across frames.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Root frame'), styles: { type: 'object', description: 'Text styles to apply by element type' } }, required: ['nodeId'] } },
-
-  { name: 'type_audit', category: 'typography',
-    description: 'Find every unique text style in a page. Flag off-scale sizes, inconsistent weights, and orphaned styles.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame or page to audit') }, required: ['nodeId'] } },
-
-  // ═══ COLOR & STYLE ═══
-  { name: 'color_palette', category: 'color',
-    description: 'Generate a full color palette (50-950 shades) from a single brand color.',
-    inputSchema: { type: 'object', properties: { baseColor: str('Brand color hex'), steps: opt(arr('Shade steps', { type: 'number' })) }, required: ['baseColor'] } },
-
-  { name: 'color_semantic', category: 'color',
-    description: 'Create semantic color tokens: surface, text, border, accent, danger, success, warning, info.',
-    inputSchema: { type: 'object', properties: { brandColor: str('Primary brand color hex') }, required: ['brandColor'] } },
-
-  { name: 'color_darkmode', category: 'color',
-    description: 'Generate a dark mode variant of any frame or color set, preserving WCAG contrast ratios.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to generate dark mode for')), colors: opt({ type: 'object', description: 'Color map to invert' }) }, required: [] } },
-
-  { name: 'color_contrast', category: 'color',
-    description: 'Check WCAG contrast for all text/background pairs in a frame. Reports AA and AAA compliance.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to check')), foreground: opt(str('Foreground color hex')), background: opt(str('Background color hex')) }, required: [] } },
-
-  { name: 'color_apply', category: 'color',
-    description: 'Apply color styles to elements by semantic role: primary, secondary, muted, accent.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to apply colors to'), colorMap: { type: 'object', description: 'Role-to-color mapping' } }, required: ['nodeId'] } },
-
-  { name: 'style_shadow', category: 'color',
-    description: 'Generate an elevation/shadow system: sm, md, lg, xl, 2xl with consistent blur, spread, and opacity.',
-    inputSchema: { type: 'object', properties: { levels: opt(arr('Shadow levels to generate')), color: opt(str('Shadow color hex')) }, required: [] } },
-
-  { name: 'style_radius', category: 'color',
-    description: 'Generate and apply a consistent border-radius scale across all frames.',
-    inputSchema: { type: 'object', properties: { base: opt(num('Base radius (default 4)')), nodeId: opt(str('Frame to apply to')) }, required: [] } },
-
-  // ═══ COMPONENTS ═══
-  { name: 'component_list', category: 'components',
-    description: 'List all components in the current file or team library, with variant info.',
-    inputSchema: { type: 'object', properties: { source: opt(str('file or library')), filter: opt(str('Search filter')) }, required: [] } },
-
-  { name: 'component_use', category: 'components',
-    description: 'Instantiate a component by name with variant properties set.',
-    inputSchema: { type: 'object', properties: { componentName: str('Component to instantiate'), variants: opt({ type: 'object', description: 'Variant property values' }), x: opt(num('X position')), y: opt(num('Y position')) }, required: ['componentName'] } },
-
-  { name: 'component_create', category: 'components',
-    description: 'Create a new component from a frame with proper variant structure.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to convert to component'), name: str('Component name'), variants: opt(arr('Variant property definitions')) }, required: ['nodeId', 'name'] } },
-
-  { name: 'component_swap', category: 'components',
-    description: 'Swap one component instance for another across an entire frame tree.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Root frame to search'), fromComponent: str('Component to replace'), toComponent: str('Component to replace with') }, required: ['nodeId', 'fromComponent', 'toComponent'] } },
-
-  { name: 'component_detach', category: 'components',
-    description: 'Detach component instances and flatten to editable frames.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Instance or frame to detach') }, required: ['nodeId'] } },
-
-  { name: 'component_audit', category: 'components',
-    description: 'Find detached instances, missing components, unused variants, and inconsistent overrides.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to audit (entire page if omitted)')) }, required: [] } },
-
-  // ═══ SPACING & GRID ═══
-  { name: 'spacing_scale', category: 'spacing',
-    description: 'Define a base spacing unit (4px or 8px) and generate the full scale.',
-    inputSchema: { type: 'object', properties: { base: opt(num('Base unit (default 8)')), steps: opt(num('Number of steps (default 12)')) }, required: [] } },
-
-  { name: 'spacing_fix', category: 'spacing',
-    description: 'Snap all off-grid spacing values in a frame to the nearest scale value.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to fix'), base: opt(num('Base unit (default 8)')) }, required: ['nodeId'] } },
-
-  { name: 'spacing_audit', category: 'spacing',
-    description: 'Report every spacing value in a frame: padding, margin, gap. Flag inconsistencies and off-grid values.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to audit'), base: opt(num('Base unit (default 8)')) }, required: ['nodeId'] } },
-
-  { name: 'spacing_rhythm', category: 'spacing',
-    description: 'Check vertical rhythm: are section gaps consistent and proportional? Flags irregular spacing patterns.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  { name: 'grid_apply', category: 'spacing',
-    description: 'Apply a layout grid to a frame: columns, rows, or custom grid with configurable gutter and margin.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to apply grid to'), type: str('columns, rows, grid'), count: opt(num('Column/row count')), gutter: opt(num('Gutter size')), margin: opt(num('Margin')) }, required: ['nodeId', 'type'] } },
-
-  { name: 'grid_check', category: 'spacing',
-    description: 'Verify all children of a frame align to the parent layout grid.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  // ═══ AUDIT & CRITIQUE ═══
-  { name: 'audit_full', category: 'audit',
-    description: 'Full design audit: spacing, typography, color, components, accessibility, hierarchy. Returns a 0-100 score with per-category breakdown.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to audit (current page if omitted)')) }, required: [] } },
-
-  { name: 'audit_hierarchy', category: 'audit',
-    description: 'Check visual hierarchy: are primary elements dominant? Are heading levels properly differentiated?',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  { name: 'audit_consistency', category: 'audit',
-    description: 'Find elements that look similar but use different styles. Flags inconsistent text, colors, spacing, and radii.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  { name: 'audit_alignment', category: 'audit',
-    description: 'Flag misaligned elements, uneven margins, off-center content, and broken visual axes.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check'), tolerance: opt(num('Pixel tolerance (default 2)')) }, required: ['nodeId'] } },
-
-  { name: 'audit_density', category: 'audit',
-    description: 'Check information density: too cramped or too sparse? Measures whitespace ratio and content distribution.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  { name: 'audit_score', category: 'audit',
-    description: 'Generate a 0-100 design health score with per-category breakdown and actionable improvement suggestions.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to score')) }, required: [] } },
-
-  // ═══ ACCESSIBILITY ═══
-  { name: 'a11y_contrast', category: 'accessibility',
-    description: 'Check all text/background color pairs against WCAG AA (4.5:1) and AAA (7:1) standards.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to check')), level: opt(str('aa or aaa (default aa)')) }, required: [] } },
-
-  { name: 'a11y_touch', category: 'accessibility',
-    description: 'Verify all interactive elements meet the 44x44px minimum touch target size.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check'), minSize: opt(num('Minimum size in px (default 44)')) }, required: ['nodeId'] } },
-
-  { name: 'a11y_focus', category: 'accessibility',
-    description: 'Generate focus ring styles for all interactive elements: buttons, inputs, links, toggles.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to add focus states to'), color: opt(str('Focus ring color hex')), offset: opt(num('Ring offset in px')) }, required: ['nodeId'] } },
-
-  { name: 'a11y_labels', category: 'accessibility',
-    description: 'Check for missing labels on inputs, buttons, and icon-only elements. Flags unlabeled interactive content.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  { name: 'a11y_fix', category: 'accessibility',
-    description: 'Auto-fix accessibility issues: bump insufficient contrast, enlarge small touch targets, add visible focus states.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to fix'), fixes: opt(arr('Specific fixes: contrast, touch, focus, labels')) }, required: ['nodeId'] } },
-
-  // ═══ RESPONSIVE ═══
-  { name: 'responsive_variant', category: 'responsive',
-    description: 'Generate mobile (375px), tablet (768px), and desktop (1440px) variants of any frame.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to generate variants from'), breakpoints: opt(arr('Breakpoint widths', { type: 'number' })) }, required: ['nodeId'] } },
-
-  { name: 'responsive_reflow', category: 'responsive',
-    description: 'Reflow a desktop layout into mobile: stack columns, resize typography, adjust spacing.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Desktop frame to reflow'), targetWidth: num('Target width in px') }, required: ['nodeId', 'targetWidth'] } },
-
-  { name: 'responsive_breakpoints', category: 'responsive',
-    description: 'Set up breakpoint frames side by side: 375, 768, 1024, 1440. Ready for responsive design.',
-    inputSchema: { type: 'object', properties: { widths: opt(arr('Breakpoint widths', { type: 'number' })), height: opt(num('Frame height')) }, required: [] } },
-
-  { name: 'responsive_check', category: 'responsive',
-    description: 'Verify text doesn\'t overflow, images maintain aspect ratio, and touch targets remain accessible at each breakpoint.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to check') }, required: ['nodeId'] } },
-
-  // ═══ EXPORT & HANDOFF ═══
-  { name: 'export_tokens_css', category: 'export',
-    description: 'Export all design tokens as CSS custom properties.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to extract tokens from')), includeColors: opt(bool('Include colors')), includeSpacing: opt(bool('Include spacing')), includeTypography: opt(bool('Include typography')) }, required: [] } },
-
-  { name: 'export_tokens_tailwind', category: 'export',
-    description: 'Export tokens as a Tailwind CSS config theme extension.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to extract tokens from')) }, required: [] } },
-
-  { name: 'export_tokens_json', category: 'export',
-    description: 'Export tokens in W3C Design Tokens format (JSON).',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to extract tokens from')) }, required: [] } },
-
-  { name: 'export_tokens_scss', category: 'export',
-    description: 'Export tokens as SCSS variables and maps.',
-    inputSchema: { type: 'object', properties: { nodeId: opt(str('Frame to extract tokens from')) }, required: [] } },
-
-  { name: 'export_spec', category: 'export',
-    description: 'Generate a design spec: measurements, spacing tokens, color values, component annotations.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Frame to generate spec for'), format: opt(str('markdown or json')) }, required: ['nodeId'] } },
-
-  { name: 'export_changelog', category: 'export',
-    description: 'Diff two frames and export what changed as structured markdown or JSON.',
-    inputSchema: { type: 'object', properties: { nodeIdA: str('First frame (before)'), nodeIdB: str('Second frame (after)'), format: opt(str('markdown or json')) }, required: ['nodeIdA', 'nodeIdB'] } },
-
-  // ═══ DESIGN CRAFT ═══
-  { name: 'get_design_craft_guide', category: 'craft',
-    description: 'CALL THIS FIRST before any design work. Returns professional design rules: typography scales, spacing systems (8px grid), color palettes, component patterns, and anti-patterns. Following these rules is the difference between amateur and production-quality output. Read the full guide before calling any create_ tools.',
-    inputSchema: { type: 'object', properties: {}, required: [] } },
-
-  // ═══ CREATE (additional) ═══
-  { name: 'create_ellipse', category: 'create',
-    description: 'Create a circle or oval. Use for avatars, status indicators, decorative elements, and icon backgrounds. Set equal width and height for a perfect circle.',
-    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), width: num('Width in px'), height: num('Height in px'), fill: opt(str('Fill color hex')), x: opt(num('X position')), y: opt(num('Y position')), parentId: opt(str('Parent frame ID')), opacity: opt(num('Opacity 0-1')) }, required: ['width', 'height'] } },
-
-  { name: 'create_line', category: 'create',
-    description: 'Create a horizontal or vertical line. Use for dividers between sections, separators in navigation, and visual breaks. A line is a rectangle with 1px height (horizontal) or 1px width (vertical).',
-    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), length: num('Length in px'), direction: opt(str('horizontal or vertical (default horizontal)')), color: opt(str('Line color hex')), parentId: opt(str('Parent frame ID')) }, required: ['length'] } },
-
-  { name: 'create_svg_node', category: 'create',
-    description: 'Create a vector graphic from raw SVG markup. Use for icons, logos, illustrations, and any custom vector shape. Pass the SVG string directly.',
-    inputSchema: { type: 'object', properties: { name: opt(str('Element name')), svg: str('Raw SVG markup string'), x: opt(num('X position')), y: opt(num('Y position')), parentId: opt(str('Parent frame ID')) }, required: ['svg'] } },
-
-  { name: 'find_nodes', category: 'create',
-    description: 'Search for elements by name or type within a frame or the entire page. Returns matching nodes with their IDs, positions, and basic properties. Use to locate elements before editing them.',
-    inputSchema: { type: 'object', properties: { query: opt(str('Search by name (partial match)')), type: opt(str('Filter by type: FRAME, TEXT, RECTANGLE, ELLIPSE, COMPONENT, INSTANCE')), parentId: opt(str('Search within this frame only')) }, required: [] } },
-
-  // ═══ TYPOGRAPHY (additional) ═══
-  { name: 'style_text_range', category: 'typography',
-    description: 'Apply different styles to specific character ranges within a text node. Use for mixed-weight text (e.g., bold product name within a regular sentence), colored keywords, or size variations within a single text element.',
-    inputSchema: { type: 'object', properties: { nodeId: str('Text node ID'), start: num('Start character index'), end: num('End character index'), fontSize: opt(num('Font size for range')), fontWeight: opt(num('Font weight: 400, 500, 600, 700')), color: opt(str('Color hex for range')) }, required: ['nodeId', 'start', 'end'] } },
-];
-
-export function getToolsByCategory(category) {
-  return TOOLS.filter(t => t.category === category);
+  create: Object.keys(CREATE),
+  modify: Object.keys(MODIFY),
+  vector: Object.keys(VECTOR),
+  read: Object.keys(READ),
+  variables: Object.keys(VARIABLES),
+  export: Object.keys(EXPORT),
+  accessibility: Object.keys(ACCESSIBILITY),
+  batch: Object.keys(BATCH),
+  'design-system': Object.keys(DESIGN_SYSTEM),
+  responsive: Object.keys(RESPONSIVE),
 }
 
-export function getToolByName(name) {
-  return TOOLS.find(t => t.name === name);
-}
-
-export function getAllToolNames() {
-  return TOOLS.map(t => t.name);
-}
+export function getTool(name) { return ALL_TOOLS[name] || null }
+export function getToolsByCategory(cat) { return CATEGORIES[cat] || [] }

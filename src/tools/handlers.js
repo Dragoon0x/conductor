@@ -1,486 +1,168 @@
 // ═══════════════════════════════════════════
-// CONDUCTOR — Tool Handlers
+// CONDUCTOR v3 — Tool Handlers
 // ═══════════════════════════════════════════
-// Executes tool calls using design intelligence.
-// Each handler returns { content: [{ type: 'text', text: string }] }
 
-import * as design from '../design/intelligence.js';
-import * as exporter from '../design/exporter.js';
-import { getDesignCraftGuide } from '../design/craftguide.js';
+import {
+  snap, typeScale, semanticColors, componentDefaults, suggestAutoLayout,
+  checkContrast, auditAccessibility, getDesignCraftGuide, resolveFontWeight,
+  hexToFigmaColor, linearGradient, radialGradient, SPACING, RADIUS, SHADOWS,
+} from '../design/intelligence.js'
 
-function text(str) {
-  return { content: [{ type: 'text', text: str }] };
+// ─── Icon SVG Library ───
+const ICONS = {
+  'arrow-right': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
+  'arrow-left': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+  'arrow-up': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  'arrow-down': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  'check': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
+  'x': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  'plus': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  'minus': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>',
+  'search': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>',
+  'menu': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  'settings': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+  'user': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  'heart': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>',
+  'star': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>',
+  'home': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>',
+  'mail': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>',
+  'chevron-right': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>',
+  'chevron-left': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>',
+  'chevron-down': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>',
+  'chevron-up': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>',
+  'external-link': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>',
+  'copy': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  'trash': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>',
+  'edit': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  'download': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  'upload': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>',
+  'eye': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  'lock': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+  'bell': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>',
+  'filter': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/></svg>',
+  'grid': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  'list': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  'link': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+  'share': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+  'sort': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19,12 12,19 5,12"/></svg>',
+  'clock': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+  'calendar': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  'phone': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>',
 }
 
-function json(obj) {
-  return text(JSON.stringify(obj, null, 2));
-}
-
-// ─── Handler Map ───
-// Returns a response for each tool. Tools that need Figma connection
-// return instructions; tools that are pure design logic execute immediately.
-
-export function handleTool(toolName, args, figmaState) {
-  const handler = HANDLERS[toolName];
-  if (!handler) return text(`Unknown tool: ${toolName}`);
-  try {
-    return handler(args, figmaState);
-  } catch (err) {
-    return text(`Error in ${toolName}: ${err.message}`);
+// ─── Main Handler ───
+export async function handleTool(name, args, bridge) {
+  // Tools that don't need Figma connection
+  switch (name) {
+    case 'get_design_craft_guide': return getDesignCraftGuide()
+    case 'check_contrast': return checkContrast(args.foreground, args.background)
+    case 'suggest_color_palette': return semanticColors(args.brandColor, args.mode || 'dark')
+    case 'suggest_type_scale': return typeScale(args.baseSize || 16, args.ratio || 'major2')
   }
+
+  // Everything else needs Figma
+  if (!bridge || !bridge.isConnected()) {
+    throw new Error('Figma plugin not connected. Open Figma → Plugins → Development → Conductor, then try again.')
+  }
+
+  // Apply design intelligence to args before sending
+  const enhanced = enhanceWithIntelligence(name, args)
+
+  // Send to Figma plugin
+  return bridge.send(name, enhanced)
 }
 
-const HANDLERS = {
-  // ═══ CREATE ═══
-  create_frame(args) {
-    const padding = design.snapToGrid(args.padding || 16);
-    const gap = design.snapToGrid(args.gap || 8);
-    return json({
-      action: 'create_frame',
-      name: args.name,
-      layoutMode: (args.direction || 'vertical').toUpperCase(),
-      primaryAxisAlignItems: 'MIN',
-      counterAxisAlignItems: 'MIN',
-      paddingLeft: padding, paddingRight: padding, paddingTop: padding, paddingBottom: padding,
-      itemSpacing: gap,
-      width: args.width || null,
-      height: args.height || null,
-      fills: args.fill ? [{ type: 'SOLID', color: hexToFigmaColor(args.fill) }] : [],
-      designNotes: `Padding: ${padding}px (grid-aligned), Gap: ${gap}px`,
-    });
-  },
+// ─── Design Intelligence Enhancement ───
+function enhanceWithIntelligence(name, args) {
+  const a = { ...args }
 
-  create_page(args) {
-    const sections = args.sections || getDefaultSections(args.pageType);
-    const colors = args.brandColor ? design.generateSemanticColors(args.brandColor) : null;
-    const typeScale = design.generateTypeScale(16, 'major-third');
-
-    return json({
-      action: 'create_page',
-      pageType: args.pageType,
-      title: args.title || `${args.pageType} page`,
-      sections,
-      typeScale: typeScale.sizes.map(s => ({ label: s.label, size: s.size })),
-      spacingScale: design.generateSpacingScale(8, 8),
-      colors,
-      darkMode: args.darkMode ? design.generateDarkMode(colors || {}) : null,
-      designNotes: `Type scale: ${typeScale.scale} (${typeScale.ratio}). Grid: 8px. Sections: ${sections.join(', ')}`,
-    });
-  },
-
-  create_section(args) {
-    const patterns = {
-      hero: { columns: 1, minHeight: 480, padding: 64, elements: ['heading', 'subheading', 'cta-group'] },
-      features: { columns: args.columns || 3, padding: 48, elements: ['section-heading', 'feature-cards'] },
-      testimonials: { columns: args.columns || 2, padding: 48, elements: ['section-heading', 'testimonial-cards'] },
-      faq: { columns: 1, padding: 48, elements: ['section-heading', 'accordion-items'] },
-      cta: { columns: 1, padding: 64, elements: ['heading', 'subheading', 'cta-button'] },
-      pricing: { columns: args.columns || 3, padding: 48, elements: ['section-heading', 'pricing-cards'] },
-      stats: { columns: args.columns || 4, padding: 48, elements: ['stat-items'] },
-      team: { columns: args.columns || 3, padding: 48, elements: ['section-heading', 'team-cards'] },
-      footer: { columns: 4, padding: 48, elements: ['logo', 'nav-groups', 'legal'] },
-      header: { columns: 1, padding: 16, elements: ['logo', 'nav-links', 'cta-button'] },
-    };
-
-    const pattern = patterns[args.sectionType] || patterns.hero;
-    return json({
-      action: 'create_section',
-      sectionType: args.sectionType,
-      ...pattern,
-      heading: args.heading,
-      designNotes: `Section pattern: ${args.sectionType}. ${pattern.columns} columns, ${pattern.padding}px padding, grid-aligned.`,
-    });
-  },
-
-  create_card(args) {
-    const variant = args.variant || 'elevated';
-    const shadows = design.generateElevation();
-    const shadow = variant === 'elevated' ? shadows.find(s => s.step === 'md') : null;
-    const radii = design.generateRadiusScale();
-    const radius = radii.find(r => r.name === 'lg');
-
-    return json({
-      action: 'create_card',
-      variant,
-      width: args.width || 320,
-      padding: 24,
-      gap: 12,
-      cornerRadius: radius?.value || 12,
-      shadow: shadow?.css || 'none',
-      title: args.title,
-      description: args.description,
-      hasImage: args.hasImage || false,
-      hasAction: args.hasAction || false,
-      designNotes: `${variant} card. 24px padding (3×8), 12px gap, ${radius?.value}px radius.`,
-    });
-  },
-
-  create_form(args) {
-    const fields = args.fields.map(f => ({
-      ...f,
-      inputHeight: 40,
-      padding: { x: 12, y: 10 },
-      fontSize: 14,
-      labelSize: 13,
-      gap: 4,
-    }));
-
-    return json({
-      action: 'create_form',
-      layout: args.layout || 'vertical',
-      fieldGap: 20,
-      submitLabel: args.submitLabel || 'Submit',
-      fields,
-      designNotes: `Form: ${fields.length} fields, ${args.layout || 'vertical'} layout. 40px input height, 14px text. All spacing grid-aligned.`,
-    });
-  },
-
-  create_table(args) {
-    return json({
-      action: 'create_table',
-      columns: args.columns,
-      rows: args.rows || 5,
-      headerHeight: 40,
-      rowHeight: 48,
-      cellPadding: { x: 16, y: 12 },
-      hasPagination: args.hasPagination || false,
-      hasSorting: args.hasSorting || false,
-      hasCheckbox: args.hasCheckbox || false,
-      designNotes: `Table: ${args.columns.length} cols × ${args.rows || 5} rows. Header: 40px, Row: 48px. 16px cell padding.`,
-    });
-  },
-
-  create_modal(args) {
-    const sizes = { sm: 400, md: 560, lg: 720, xl: 900 };
-    const width = sizes[args.size || 'md'] || 560;
-
-    return json({
-      action: 'create_modal',
-      title: args.title,
-      width,
-      padding: 24,
-      headerHeight: 56,
-      cornerRadius: 16,
-      hasCloseButton: args.hasCloseButton !== false,
-      actions: args.actions || ['Cancel', 'Confirm'],
-      overlay: { color: '#000000', opacity: 0.5 },
-      designNotes: `Modal: ${args.size || 'md'} (${width}px). 24px padding, 16px radius.`,
-    });
-  },
-
-  create_nav(args) {
-    return json({
-      action: 'create_nav',
-      navType: args.navType,
-      items: args.items,
-      logoText: args.logoText,
-      hasSearch: args.hasSearch || false,
-      hasAvatar: args.hasAvatar || false,
-      height: args.navType === 'topbar' ? 56 : undefined,
-      width: args.navType === 'sidebar' ? 240 : undefined,
-      padding: { x: 16, y: 12 },
-      itemGap: args.navType === 'tabs' ? 0 : 8,
-      designNotes: `Nav: ${args.navType} with ${args.items.length} items. All spacing grid-aligned.`,
-    });
-  },
-
-  // ═══ LAYOUT ═══
-  layout_auto(args) {
-    return json({
-      action: 'set_auto_layout',
-      nodeId: args.nodeId,
-      direction: args.direction || 'auto-detect',
-      gap: args.gap ? design.snapToGrid(args.gap) : 'auto-detect',
-      padding: args.padding ? design.snapToGrid(args.padding) : 'auto-detect',
-      designNotes: 'Converting to auto-layout. Direction and gap auto-detected from child positions if not specified.',
-    });
-  },
-
-  layout_grid(args) {
-    return json({
-      action: 'apply_grid',
-      nodeId: args.nodeId,
-      columns: args.columns || 12,
-      gutter: design.snapToGrid(args.gutter || 24),
-      margin: design.snapToGrid(args.margin || 24),
-      type: args.type || 'stretch',
-    });
-  },
-
-  layout_stack(args) {
-    return json({ action: 'stack', nodeId: args.nodeId, direction: args.direction, gap: design.snapToGrid(args.gap || 8), align: args.align || 'start' });
-  },
-
-  layout_wrap(args) {
-    return json({ action: 'wrap_layout', nodeId: args.nodeId, gap: design.snapToGrid(args.gap || 8), maxWidth: args.maxWidth });
-  },
-
-  layout_constrain(args) {
-    return json({ action: 'set_constraints', nodeId: args.nodeId, horizontal: args.horizontal, vertical: args.vertical, minWidth: args.minWidth, maxWidth: args.maxWidth, minHeight: args.minHeight, maxHeight: args.maxHeight });
-  },
-
-  layout_align(args) {
-    return json({ action: 'align', nodeIds: args.nodeIds, alignment: args.alignment });
-  },
-
-  layout_nest(args) {
-    return json({ action: 'restructure_to_autolayout', nodeId: args.nodeId, maxDepth: args.depth || 3, designNotes: 'Analyzing spatial relationships to build auto-layout tree. Groups detected by proximity and alignment.' });
-  },
-
-  // ═══ TYPOGRAPHY ═══
-  type_scale(args) {
-    if (args.action === 'generate') {
-      const result = design.generateTypeScale(args.baseSize || 16, args.scaleRatio || 'major-third');
-      return json({ action: 'type_scale_generated', ...result });
+  switch (name) {
+    case 'create_frame': {
+      // Snap all spacing to grid
+      if (a.padding !== undefined) { const p = snap(a.padding); a.paddingTop = p; a.paddingRight = p; a.paddingBottom = p; a.paddingLeft = p; delete a.padding }
+      if (a.paddingTop !== undefined) a.paddingTop = snap(a.paddingTop)
+      if (a.paddingRight !== undefined) a.paddingRight = snap(a.paddingRight)
+      if (a.paddingBottom !== undefined) a.paddingBottom = snap(a.paddingBottom)
+      if (a.paddingLeft !== undefined) a.paddingLeft = snap(a.paddingLeft)
+      if (a.gap !== undefined) a.gap = snap(a.gap)
+      // Default auto-layout
+      if (!a.direction) a.direction = 'VERTICAL'
+      break
     }
-    return json({ action: 'detect_type_scale', nodeId: args.nodeId, designNotes: 'Scanning all text nodes to detect current scale ratio.' });
-  },
 
-  type_hierarchy(args) {
-    const scale = design.generateTypeScale(args.baseSize || 16, 'major-third', { down: 1, up: args.levels || 4 });
-    return json({ action: 'apply_hierarchy', nodeId: args.nodeId, levels: scale.sizes.map(s => ({ label: s.label, size: s.size, lineHeight: design.getLineHeight(s.size), weight: s.step >= 1 ? 700 : s.step === 0 ? 400 : 400 })) });
-  },
-
-  type_pair(args) {
-    const pairs = [
-      { heading: 'Instrument Serif', body: 'Sora', style: 'editorial' },
-      { heading: 'Space Grotesk', body: 'IBM Plex Sans', style: 'technical' },
-      { heading: 'Fraunces', body: 'Commissioner', style: 'classic' },
-      { heading: 'Cabinet Grotesk', body: 'Satoshi', style: 'modern' },
-      { heading: 'Gloock', body: 'DM Sans', style: 'playful' },
-    ];
-    const match = args.style ? pairs.find(p => p.style === args.style) : pairs[0];
-    return json({ suggestions: pairs, recommended: match || pairs[0] });
-  },
-
-  type_measure(args) {
-    return json({ action: 'check_measure', nodeId: args.nodeId, optimalRange: '45-75 characters', designNotes: 'Measuring character count per line and checking line-height ratios.' });
-  },
-
-  type_apply(args) {
-    return json({ action: 'apply_text_styles', nodeId: args.nodeId, styles: args.styles });
-  },
-
-  type_audit(args) {
-    return json({ action: 'audit_typography', nodeId: args.nodeId, designNotes: 'Scanning all text nodes for unique styles. Will flag off-scale sizes and inconsistent weights.' });
-  },
-
-  // ═══ COLOR ═══
-  color_palette(args) {
-    const palette = design.generatePalette(args.baseColor, args.steps);
-    return json({ action: 'palette_generated', baseColor: args.baseColor, shades: palette });
-  },
-
-  color_semantic(args) {
-    const colors = design.generateSemanticColors(args.brandColor);
-    return json({ action: 'semantic_colors_generated', ...colors });
-  },
-
-  color_darkmode(args) {
-    if (args.colors) return json({ action: 'dark_mode_generated', colors: design.generateDarkMode(args.colors) });
-    return json({ action: 'generate_dark_mode', nodeId: args.nodeId, designNotes: 'Reading frame colors and generating dark mode with preserved contrast.' });
-  },
-
-  color_contrast(args) {
-    if (args.foreground && args.background) {
-      return json({ action: 'contrast_checked', ...design.checkContrast(args.foreground, args.background) });
+    case 'create_text': {
+      // Resolve font weight
+      if (a.fontWeight) a.fontWeight = resolveFontWeight(a.fontWeight)
+      if (!a.fontFamily) a.fontFamily = 'Inter'
+      // Build fontName for Figma
+      a.fontName = { family: a.fontFamily, style: a.fontWeight || 'Regular' }
+      break
     }
-    return json({ action: 'audit_contrast', nodeId: args.nodeId, designNotes: 'Checking all text/background pairs in frame.' });
-  },
 
-  color_apply(args) {
-    return json({ action: 'apply_colors', nodeId: args.nodeId, colorMap: args.colorMap });
-  },
+    case 'create_smart_component': {
+      const defaults = componentDefaults(a.type, a.variant)
+      if (!defaults) throw new Error(`Unknown component type: ${a.type}. Available: button, input, card, avatar, badge, chip, switch, checkbox, radio, toast, tooltip, modal, dropdown, tabs, table, progress, skeleton, divider`)
+      const colors = semanticColors(a.brandColor || '#6366f1', a.mode || 'dark')
+      a._defaults = defaults
+      a._colors = colors
+      break
+    }
 
-  style_shadow(args) {
-    const shadows = design.generateElevation(args.levels);
-    return json({ action: 'elevation_generated', shadows });
-  },
+    case 'set_effects': {
+      if (a.preset) {
+        const s = SHADOWS[a.preset]
+        if (s) a.shadow = s
+      }
+      break
+    }
 
-  style_radius(args) {
-    const scale = design.generateRadiusScale(args.base || 4);
-    return json({ action: 'radius_scale_generated', scale, nodeId: args.nodeId });
-  },
+    case 'set_fill': {
+      if (a.type === 'LINEAR' && a.gradient) {
+        a._fill = linearGradient(a.gradient.angle || 180, a.gradient.stops)
+      } else if (a.type === 'RADIAL' && a.gradient) {
+        a._fill = radialGradient(a.gradient.stops)
+      } else if (a.color) {
+        a._fill = { type: 'SOLID', color: hexToFigmaColor(a.color), opacity: a.opacity !== undefined ? a.opacity : 1 }
+      }
+      break
+    }
 
-  // ═══ COMPONENTS ═══
-  component_list(args) { return json({ action: 'list_components', source: args.source || 'file', filter: args.filter }); },
-  component_use(args) { return json({ action: 'instantiate_component', componentName: args.componentName, variants: args.variants, position: { x: args.x || 0, y: args.y || 0 } }); },
-  component_create(args) { return json({ action: 'create_component', nodeId: args.nodeId, name: args.name, variants: args.variants }); },
-  component_swap(args) { return json({ action: 'swap_component', nodeId: args.nodeId, from: args.fromComponent, to: args.toComponent }); },
-  component_detach(args) { return json({ action: 'detach_instance', nodeId: args.nodeId }); },
-  component_audit(args) { return json({ action: 'audit_components', nodeId: args.nodeId }); },
+    case 'create_icon': {
+      const svg = ICONS[a.icon]
+      if (!svg) throw new Error(`Unknown icon: ${a.icon}. Available: ${Object.keys(ICONS).join(', ')}`)
+      a._svg = svg.replace('currentColor', a.color || '#ffffff')
+      a._size = a.size || 24
+      break
+    }
 
-  // ═══ SPACING ═══
-  spacing_scale(args) {
-    const scale = design.generateSpacingScale(args.base || 8, args.steps || 12);
-    return json({ action: 'spacing_scale_generated', base: args.base || 8, scale });
-  },
+    case 'set_auto_layout': {
+      if (a.padding !== undefined) { const p = snap(a.padding); a.paddingTop = p; a.paddingRight = p; a.paddingBottom = p; a.paddingLeft = p; delete a.padding }
+      ;['paddingTop','paddingRight','paddingBottom','paddingLeft','gap'].forEach(k => { if (a[k] !== undefined) a[k] = snap(a[k]) })
+      break
+    }
 
-  spacing_fix(args) {
-    return json({ action: 'fix_spacing', nodeId: args.nodeId, base: args.base || 8, designNotes: 'Snapping all padding, margin, and gap values to nearest grid multiple.' });
-  },
+    case 'create_design_tokens': {
+      const colors = semanticColors(a.brandColor, 'dark')
+      const colorsLight = semanticColors(a.brandColor, 'light')
+      const scale = typeScale(16, 'major2')
+      a._darkColors = colors
+      a._lightColors = colorsLight
+      a._typeScale = scale
+      a._spacing = SPACING
+      a._radius = RADIUS
+      break
+    }
 
-  spacing_audit(args) {
-    return json({ action: 'audit_spacing', nodeId: args.nodeId, base: args.base || 8 });
-  },
+    case 'fix_spacing': {
+      a._grid = a.grid || 8
+      break
+    }
 
-  spacing_rhythm(args) {
-    return json({ action: 'check_rhythm', nodeId: args.nodeId, designNotes: 'Measuring vertical gaps between sections and checking for proportional consistency.' });
-  },
+    case 'lint_design': {
+      a._rules = a.rules || ['spacing', 'naming', 'colors', 'fonts', 'contrast', 'alignment', 'touch-targets']
+      break
+    }
+  }
 
-  grid_apply(args) {
-    return json({ action: 'apply_grid', nodeId: args.nodeId, type: args.type, count: args.count || 12, gutter: design.snapToGrid(args.gutter || 24), margin: design.snapToGrid(args.margin || 24) });
-  },
-
-  grid_check(args) {
-    return json({ action: 'check_grid_alignment', nodeId: args.nodeId });
-  },
-
-  // ═══ AUDIT ═══
-  audit_full(args) { return json({ action: 'full_audit', nodeId: args.nodeId, categories: ['spacing', 'typography', 'color', 'components', 'accessibility', 'hierarchy'] }); },
-  audit_hierarchy(args) { return json({ action: 'audit_hierarchy', nodeId: args.nodeId }); },
-  audit_consistency(args) { return json({ action: 'audit_consistency', nodeId: args.nodeId }); },
-  audit_alignment(args) { return json({ action: 'audit_alignment', nodeId: args.nodeId, tolerance: args.tolerance || 2 }); },
-  audit_density(args) { return json({ action: 'audit_density', nodeId: args.nodeId }); },
-
-  audit_score(args) {
-    return json({ action: 'compute_score', nodeId: args.nodeId, designNotes: 'Computing 0-100 score weighted: spacing 25%, typography 20%, color 15%, components 15%, accessibility 15%, hierarchy 10%.' });
-  },
-
-  // ═══ ACCESSIBILITY ═══
-  a11y_contrast(args) {
-    if (!args.nodeId) return json({ action: 'check_contrast_global', level: args.level || 'aa' });
-    return json({ action: 'check_contrast', nodeId: args.nodeId, level: args.level || 'aa' });
-  },
-
-  a11y_touch(args) { return json({ action: 'check_touch_targets', nodeId: args.nodeId, minSize: args.minSize || 44 }); },
-  a11y_focus(args) { return json({ action: 'generate_focus_states', nodeId: args.nodeId, color: args.color || '#2563eb', offset: args.offset || 2 }); },
-  a11y_labels(args) { return json({ action: 'check_labels', nodeId: args.nodeId }); },
-  a11y_fix(args) { return json({ action: 'auto_fix_a11y', nodeId: args.nodeId, fixes: args.fixes || ['contrast', 'touch', 'focus'] }); },
-
-  // ═══ RESPONSIVE ═══
-  responsive_variant(args) {
-    const breakpoints = args.breakpoints || [375, 768, 1440];
-    return json({ action: 'generate_variants', nodeId: args.nodeId, breakpoints: breakpoints.map(w => ({ width: w, name: w <= 375 ? 'mobile' : w <= 768 ? 'tablet' : 'desktop' })) });
-  },
-
-  responsive_reflow(args) { return json({ action: 'reflow', nodeId: args.nodeId, targetWidth: args.targetWidth }); },
-  responsive_breakpoints(args) {
-    const widths = args.widths || [375, 768, 1024, 1440];
-    return json({ action: 'setup_breakpoints', frames: widths.map(w => ({ width: w, height: args.height || 900, name: design.BREAKPOINTS[w <= 375 ? 'mobile' : w <= 768 ? 'tablet' : 'desktop']?.name || `${w}px` })) });
-  },
-  responsive_check(args) { return json({ action: 'check_responsive', nodeId: args.nodeId }); },
-
-  // ═══ EXPORT ═══
-  export_tokens_css(args) {
-    const tokens = buildTokenSet(args);
-    return text(exporter.exportCSS(tokens));
-  },
-  export_tokens_tailwind(args) {
-    const tokens = buildTokenSet(args);
-    return text(exporter.exportTailwind(tokens));
-  },
-  export_tokens_json(args) {
-    const tokens = buildTokenSet(args);
-    return text(exporter.exportW3CTokens(tokens));
-  },
-  export_tokens_scss(args) {
-    const tokens = buildTokenSet(args);
-    return text(exporter.exportSCSS(tokens));
-  },
-  export_spec(args) { return json({ action: 'generate_spec', nodeId: args.nodeId, format: args.format || 'markdown' }); },
-  export_changelog(args) { return json({ action: 'diff_frames', nodeIdA: args.nodeIdA, nodeIdB: args.nodeIdB, format: args.format || 'markdown' }); },
-
-  // ═══ DESIGN CRAFT ═══
-  get_design_craft_guide() {
-    return text(getDesignCraftGuide());
-  },
-
-  // ═══ CREATE (additional) ═══
-  create_ellipse(args) {
-    return json({
-      action: 'create_ellipse',
-      name: args.name || 'Ellipse',
-      width: args.width, height: args.height,
-      fill: args.fill || '#ffffff',
-      x: args.x, y: args.y,
-      parentId: args.parentId,
-      opacity: args.opacity,
-    });
-  },
-
-  create_line(args) {
-    var dir = args.direction || 'horizontal';
-    return json({
-      action: 'create_rect',
-      name: args.name || 'Divider',
-      width: dir === 'horizontal' ? args.length : 1,
-      height: dir === 'horizontal' ? 1 : args.length,
-      fill: args.color || '#1a1a32',
-      parentId: args.parentId,
-    });
-  },
-
-  create_svg_node(args) {
-    return json({
-      action: 'create_svg_node',
-      name: args.name || 'SVG',
-      svg: args.svg,
-      x: args.x, y: args.y,
-      parentId: args.parentId,
-    });
-  },
-
-  find_nodes(args) {
-    return json({
-      action: 'find_nodes',
-      query: args.query,
-      type: args.type,
-      parentId: args.parentId,
-    });
-  },
-
-  // ═══ TYPOGRAPHY (additional) ═══
-  style_text_range(args) {
-    return json({
-      action: 'style_text_range',
-      nodeId: args.nodeId,
-      start: args.start,
-      end: args.end,
-      fontSize: args.fontSize,
-      fontWeight: args.fontWeight,
-      color: args.color,
-    });
-  },
-};
-
-// ─── Helpers ───
-
-function hexToFigmaColor(hex) {
-  const { r, g, b } = design.hexToRgb(hex);
-  return { r: r / 255, g: g / 255, b: b / 255 };
-}
-
-function getDefaultSections(pageType) {
-  const defaults = {
-    landing:   ['header', 'hero', 'features', 'testimonials', 'cta', 'footer'],
-    pricing:   ['header', 'hero', 'pricing', 'faq', 'cta', 'footer'],
-    dashboard: ['sidebar', 'header', 'stats', 'table'],
-    settings:  ['sidebar', 'header', 'form'],
-    auth:      ['hero', 'form'],
-    blog:      ['header', 'hero', 'cards', 'footer'],
-    portfolio: ['header', 'hero', 'cards', 'cta', 'footer'],
-    docs:      ['sidebar', 'header', 'content'],
-  };
-  return defaults[pageType] || defaults.landing;
-}
-
-function buildTokenSet(args) {
-  return {
-    colors: design.generateSemanticColors(args.brandColor || '#6366f1'),
-    spacing: design.generateSpacingScale(8, 8),
-    fontSizes: design.generateTypeScale(16, 'major-third').sizes,
-    radii: design.generateRadiusScale(4),
-    shadows: design.generateElevation(),
-  };
+  return a
 }

@@ -1,25 +1,30 @@
-# CONDUCTOR
+# conductor-figma
 
-> Experimental software. DYOR. Use at your own risk.
-
-Design-intelligent MCP server for Figma. 61 tools across 10 categories. It doesn't place shapes — it designs. 8px grid, type scale ratios, auto-layout, component reuse, WCAG accessibility, and a self-auditing design score. Every decision follows the rules a senior designer applies instinctively.
+Design-intelligent MCP server for Figma. 123 tools across 10 categories. Every tool has built-in design intelligence — 8px grid, type scales, semantic colors, accessibility checks, component defaults. Not a shape proxy. A design engine.
 
 ```
 npx conductor-figma
 ```
 
-## What it does
+## What makes this different
 
-Other MCP servers translate your words into shapes. CONDUCTOR translates them into design decisions.
+**Figsor** has 45 tools that proxy shapes. You tell it "create a rectangle at 43px with 7px padding" and it does exactly that — even though those values are wrong.
 
-Say "create a pricing page." A typical MCP creates rectangles with absolute positioning, random font sizes, and arbitrary spacing. CONDUCTOR creates a page with auto-layout frames, a type scale following a major third ratio (1.25), spacing on an 8px grid, and proper visual hierarchy — headings are dominant, body text recedes, CTAs are prominent.
+**Conductor** has 123 tools with design intelligence. You say "create a button" and it knows: 44px height (touch target), 20px horizontal padding (8px grid), 10px radius, 15px Semi Bold text. Every value is intentional.
 
 ## Setup
 
-Install the CONDUCTOR plugin from the Figma Community. Then add to your editor:
+### 1. Figma Plugin
+
+```
+git clone https://github.com/dragoon0x/conductor.git
+```
+
+In Figma: **Plugins → Development → Import plugin from manifest** → select `conductor/figma-plugin/manifest.json`
+
+### 2. Add to Cursor / Claude Code
 
 ```json
-// ~/.cursor/mcp.json
 {
   "mcpServers": {
     "conductor": {
@@ -30,164 +35,81 @@ Install the CONDUCTOR plugin from the Figma Community. Then add to your editor:
 }
 ```
 
-Open your Figma file, run the plugin, then chat:
+### 3. Design
 
-```
-"Create a SaaS landing page with hero, features, and pricing"
-"Audit this frame — is my spacing consistent?"
-"Generate a dark mode variant of this page"
-"Convert these absolute-positioned layers to auto-layout"
-```
+Open Figma → Run the Conductor plugin → Chat in Cursor:
 
-## 61 Tools · 10 Categories
+> "Create a mobile login screen with email and password fields"
 
-### Create (8)
-| Tool | Description |
-|------|-------------|
-| `create_frame` | Auto-layout frame with grid-aligned spacing |
-| `create_page` | Full page from intent: landing, pricing, dashboard |
-| `create_section` | Hero, features, testimonials, FAQ, CTA — pattern-aware |
-| `create_card` | Card with proper padding, radius, shadow, hierarchy |
-| `create_form` | Form with labels, inputs, validation, submit flow |
-| `create_table` | Data table with header, rows, sorting, pagination |
-| `create_modal` | Modal with overlay, sizing, and action buttons |
-| `create_nav` | Topbar, sidebar, breadcrumbs, tabs — with states |
+> "Design a dashboard with sidebar, KPI cards, and chart area"
 
-### Layout (7)
-| Tool | Description |
-|------|-------------|
-| `layout_auto` | Convert any frame to auto-layout |
-| `layout_grid` | Apply column grid: 12-col, 8-col, custom |
-| `layout_stack` | Stack children with consistent spacing |
-| `layout_wrap` | Wrap-layout for tags, pills, flexible grids |
-| `layout_constrain` | Set fill, hug, fixed, min/max constraints |
-| `layout_align` | Align and distribute frames on the grid |
-| `layout_nest` | Restructure flat layers into auto-layout tree |
+> "Audit the accessibility of my current selection"
 
-### Typography (6)
-| Tool | Description |
-|------|-------------|
-| `type_scale` | Generate or detect type scale ratios |
-| `type_hierarchy` | Set heading levels with proper ratios |
-| `type_pair` | Font pairing suggestions |
-| `type_measure` | Check line length and readability |
-| `type_apply` | Bulk-apply text styles |
-| `type_audit` | Find off-scale sizes and inconsistencies |
+> "Export this frame as React + Tailwind code"
 
-### Color & Style (7)
-| Tool | Description |
-|------|-------------|
-| `color_palette` | Generate 50-950 shades from one color |
-| `color_semantic` | Create semantic tokens |
-| `color_darkmode` | Generate dark mode with preserved contrast |
-| `color_contrast` | WCAG AA/AAA contrast checking |
-| `color_apply` | Apply colors by semantic role |
-| `style_shadow` | Generate elevation system |
-| `style_radius` | Generate radius scale |
+## 123 Tools in 10 Categories
 
-### Components (6)
-| Tool | Description |
-|------|-------------|
-| `component_list` | List components in file or library |
-| `component_use` | Instantiate with variant props |
-| `component_create` | Create component from frame |
-| `component_swap` | Swap instances across a frame |
-| `component_detach` | Detach instances to editable frames |
-| `component_audit` | Find missing/unused/detached components |
+### Create & Layout (13)
+create_frame, create_text, create_rectangle, create_ellipse, create_line, create_svg_node, create_component, create_component_instance, create_component_set, create_smart_component, set_auto_layout, create_section, create_page
 
-### Spacing & Grid (6)
-| Tool | Description |
-|------|-------------|
-| `spacing_scale` | Generate spacing scale from base unit |
-| `spacing_fix` | Snap off-grid values to nearest grid |
-| `spacing_audit` | Report all spacing values, flag issues |
-| `spacing_rhythm` | Check vertical rhythm consistency |
-| `grid_apply` | Apply layout grid to a frame |
-| `grid_check` | Verify children align to grid |
+### Modify & Style (25)
+modify_node, set_fill (solid + gradients), set_stroke, set_effects (shadows + blur), set_image_fill, style_text_range, set_constraints, delete_node, move_to_parent, duplicate_node, group_nodes, ungroup_nodes, resize_node, align_nodes, set_corner_radius, set_opacity, set_blend_mode, set_clip_content, rename_node, lock_node, set_visibility, reorder_node, set_layout_sizing, flatten_node, set_rotation
 
-### Audit & Critique (6)
-| Tool | Description |
-|------|-------------|
-| `audit_full` | Full design audit across all categories |
-| `audit_hierarchy` | Check visual hierarchy |
-| `audit_consistency` | Find elements with inconsistent styles |
-| `audit_alignment` | Flag misaligned elements |
-| `audit_density` | Check information density |
-| `audit_score` | 0-100 design health score |
+### Vector & Shape (8)
+create_vector, boolean_operation, create_polygon, create_star, offset_path, create_arrow, create_icon (35 built-in icons), create_divider
 
-### Accessibility (5)
-| Tool | Description |
-|------|-------------|
-| `a11y_contrast` | WCAG AA/AAA contrast checking |
-| `a11y_touch` | 44x44px touch target verification |
-| `a11y_focus` | Generate focus ring styles |
-| `a11y_labels` | Check for missing labels |
-| `a11y_fix` | Auto-fix: contrast, targets, focus |
+### Read & Inspect (18)
+get_selection, get_page_structure, get_node_info, get_nodes_info, find_nodes, get_local_styles, get_local_variables, list_components, list_pages, get_document_info, set_selection, set_focus, get_annotations, set_annotation, list_available_fonts, read_node_css, get_selection_colors, measure_distance
 
-### Responsive (4)
-| Tool | Description |
-|------|-------------|
-| `responsive_variant` | Generate mobile/tablet/desktop variants |
-| `responsive_reflow` | Reflow desktop to mobile |
-| `responsive_breakpoints` | Set up breakpoint frames |
-| `responsive_check` | Verify overflow and targets |
+### Variables & Tokens (10)
+create_variable_collection, create_variable, bind_variable, get_variables, update_variable, delete_variable, create_design_tokens, import_tokens, export_tokens, swap_mode
 
-### Export & Handoff (6)
-| Tool | Description |
-|------|-------------|
-| `export_tokens_css` | CSS custom properties |
-| `export_tokens_tailwind` | Tailwind config extension |
-| `export_tokens_json` | W3C Design Tokens format |
-| `export_tokens_scss` | SCSS variables |
-| `export_spec` | Design spec with measurements |
-| `export_changelog` | Diff two frames |
+### Export & Code (10)
+export_as_svg, export_as_png, export_to_react, export_design_specs, export_assets, screenshot, copy_css, generate_stylesheet, export_color_palette, export_typography
+
+### Accessibility & Lint (12)
+audit_accessibility, check_contrast, fix_touch_targets, lint_design, fix_spacing, check_naming, suggest_improvements, validate_component, check_consistency, generate_a11y_report, color_blindness_check, responsive_check
+
+### Batch Operations (12)
+batch_rename, batch_style, batch_replace_text, batch_replace_color, batch_resize, batch_align, batch_delete, batch_duplicate, batch_set_visibility, batch_lock, select_all_by_type, clean_hidden_layers
+
+### Design System (10)
+scan_design_system, create_style_guide, detect_inconsistencies, normalize_design, extract_components, get_design_craft_guide, suggest_color_palette, suggest_type_scale, import_design_system, compare_to_system
+
+### Responsive (5)
+create_responsive_variant, set_breakpoint, convert_to_responsive, generate_mobile, stack_for_mobile
 
 ## Design Intelligence
 
-Every tool is backed by real design logic, not arbitrary values.
+Every tool queries the intelligence engine:
 
-**8px Grid**: All spacing values snap to the nearest multiple of 8. Padding, margins, gaps — no 13px, no 27px, no arbitrary numbers.
+- **8px Grid**: All spacing values snapped to 8px grid
+- **Type Scale**: Mathematical ratios (Major Second, Perfect Fourth, Golden)
+- **Semantic Colors**: Full palette from one brand color (dark + light)
+- **Component Defaults**: 18 component types with size variants
+- **Accessibility**: WCAG AA/AAA contrast checking, 44px touch targets
+- **Font Weights**: Auto-resolves "bold" → "Bold", "600" → "Semi Bold"
+- **Layout Intelligence**: 13 layout presets (row, column, center, spread, grid, sidebar, form)
 
-**Type Scale Ratios**: Font sizes follow mathematical ratios. Minor third (1.2), major third (1.25), perfect fourth (1.333), golden ratio (1.618). Headings, body, captions all relate to each other.
+## vs Competition
 
-**Auto-Layout**: Every frame uses Figma auto-layout with proper direction, gap, padding, and alignment. Zero absolute positioning.
-
-**WCAG Accessibility**: Contrast checking against AA (4.5:1) and AAA (7:1). Touch target verification (44x44px minimum). Focus state generation.
-
-**Design Score**: 0-100 health score weighted across spacing (25%), typography (20%), color (15%), components (15%), accessibility (15%), hierarchy (10%).
-
-## Programmatic API
-
-```js
-import { generateTypeScale, checkContrast, auditSpacing, snapToGrid } from 'conductor-figma'
-
-const scale = generateTypeScale(16, 'major-third')
-// → { scale: 'Major Third', ratio: 1.25, sizes: [...] }
-
-const contrast = checkContrast('#333333', '#ffffff')
-// → { ratio: 12.63, aa: true, aaa: true }
-
-const audit = auditSpacing([8, 13, 16, 22, 32], 8)
-// → { adherence: 0.6, fixes: [{ from: 13, to: 16 }, { from: 22, to: 24 }] }
-```
-
-## CLI
-
-```bash
-conductor-figma --list        # List all 61 tools
-conductor-figma --categories  # Show categories
-conductor-figma --help        # Help
-conductor-figma               # Start MCP server (stdio)
-```
-
-## Zero Dependencies
-
-CONDUCTOR has no runtime dependencies. Pure JavaScript. The design intelligence engine runs locally — no API calls, no external services.
+| Feature | Conductor | Figsor | Framelink | Official Figma |
+|---------|-----------|--------|-----------|---------------|
+| Tools | 123 | 45 | 5 | 12 |
+| Design intelligence | Yes | No | No | No |
+| Smart components | Yes | No | No | No |
+| Accessibility audit | Yes | No | No | No |
+| Code export | Yes | No | No | Partial |
+| Batch operations | 12 tools | No | No | No |
+| Design system scan | Yes | No | No | Partial |
+| Responsive tools | 5 tools | No | No | No |
+| Design linting | Yes | No | No | No |
+| 8px grid enforcement | Yes | No | No | No |
 
 ## Disclaimer
 
-Experimental, open-source software. Provided as-is with no warranties. DYOR. Use at your own risk. The author assumes zero liability.
+Experimental software. DYOR.
 
 ## License
 
-MIT. Built by 0xDragoon.
+MIT. Built by [0xDragoon](https://github.com/dragoon0x).

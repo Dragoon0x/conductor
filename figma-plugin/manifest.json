@@ -1,0 +1,14 @@
+{
+  "name": "Conductor",
+  "id": "conductor-figma-mcp",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "Conductor connects to a local WebSocket server only"
+  }
+}
