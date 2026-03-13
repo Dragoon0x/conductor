@@ -81,7 +81,7 @@ export async function handleTool(name, args, bridge) {
     var rootResult = await bridge.send('create_frame', {
       name: interpretation.industry + ' — ' + interpretation.mood,
       direction: 'VERTICAL', width: W, gap: 0,
-      fill: pageColors.bg, primaryAxisSizingMode: 'HUG'
+      fill: pageColors.bg
     })
 
     var totalElements = 1
@@ -133,8 +133,7 @@ export async function handleTool(name, args, bridge) {
     var rootResult = await bridge.send('create_frame', {
       name: (args.type || 'Page').charAt(0).toUpperCase() + (args.type || 'page').slice(1) + ' Page',
       direction: 'VERTICAL', width: pageSpec.width, gap: 0,
-      fill: semanticColors(pageSpec.brand, pageSpec.mode || 'dark').bg,
-      primaryAxisSizingMode: 'HUG'
+      fill: semanticColors(pageSpec.brand, pageSpec.mode || 'dark').bg
     })
     // Build each section inside the page
     var totalElements = 1
