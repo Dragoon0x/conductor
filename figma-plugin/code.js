@@ -62,7 +62,7 @@ function resolveRef(ref) {
 
 async function loadFont(family, style) {
   try { await figma.loadFontAsync({ family: family || 'Inter', style: style || 'Regular' }) }
-  catch { await figma.loadFontAsync({ family: 'Inter', style: 'Regular' }) }
+  catch (e) { await figma.loadFontAsync({ family: 'Inter', style: 'Regular' }) }
 }
 
 function serializeNode(node, depth) {
