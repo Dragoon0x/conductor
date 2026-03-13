@@ -1,0 +1,49 @@
+{
+  "name": "conductor-figma",
+  "version": "3.3.0",
+  "description": "Design-intelligent MCP server for Figma. 201 design-intelligent tools for Figma. Every tool knows typography, spacing, color, accessibility. Not a shape proxy — a design engine.",
+  "author": "0xDragoon",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/server.js",
+  "bin": {
+    "conductor-figma": "./bin/conductor.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "figma-plugin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node bin/conductor.js",
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "ws": "^8.19.0"
+  },
+  "keywords": [
+    "figma",
+    "mcp",
+    "model-context-protocol",
+    "design",
+    "ai-agent",
+    "cursor",
+    "claude-code",
+    "auto-layout",
+    "design-system",
+    "accessibility",
+    "design-tokens",
+    "code-export",
+    "react",
+    "tailwind",
+    "design-intelligence"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dragoon0x/conductor"
+  },
+  "homepage": "https://dragoon0x.github.io/conductor/"
+}
