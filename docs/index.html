@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CONDUCTOR — MCP server for Figma with design intelligence</title>
-<meta name="description" content="201 MCP tools for Figma that actually understand design. 8px grid, type scales, accessibility, code export. Used with Cursor and Claude Code.">
+<title>CONDUCTOR — MCP server for Figma</title>
+<meta name="description" content="MCP server for Figma with 201 tools. Snaps spacing to 8px grid, enforces touch targets, resolves font weights. Experimental. DYOR.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -13,188 +13,152 @@
   --white:#fff;--g50:#fafafa;--g100:#f5f5f5;--g200:#e5e5e5;--g300:#d4d4d4;
   --g400:#a3a3a3;--g500:#737373;--g600:#525252;--g700:#404040;--g800:#262626;--g900:#171717;--black:#0a0a0a;
   --sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
-  --max:720px;
+  --max:680px;
 }
 html{scroll-behavior:smooth}
-body{font-family:var(--sans);background:var(--white);color:var(--g600);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--white);color:var(--g600);line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--black);color:var(--white)}
 a{color:var(--black);text-decoration:underline;text-decoration-color:var(--g300);text-underline-offset:3px;transition:text-decoration-color .15s}
 a:hover{text-decoration-color:var(--black)}
-
 .w{max-width:var(--max);margin:0 auto;padding:0 24px}
 
-/* Nav */
-nav{height:52px;display:flex;align-items:center;border-bottom:1px solid var(--g200)}
+nav{height:48px;display:flex;align-items:center;border-bottom:1px solid var(--g200)}
 nav .w{display:flex;align-items:center;justify-content:space-between;width:100%}
 .logo{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--black);letter-spacing:.12em;text-decoration:none}
-.nav-r{display:flex;gap:20px;align-items:center}
-.nav-r a{font-size:13px;color:var(--g500);text-decoration:none;transition:color .15s}
+.nav-r{display:flex;gap:16px;align-items:center}
+.nav-r a{font-size:13px;color:var(--g500);text-decoration:none}
 .nav-r a:hover{color:var(--black)}
-.nav-r .pill{font-family:var(--mono);font-size:10px;padding:4px 10px;border:1px solid var(--g200);border-radius:4px;color:var(--g500);letter-spacing:.04em}
 
-/* Hero */
-.hero{padding:80px 0 64px}
-.hero p.label{font-family:var(--mono);font-size:11px;color:var(--g400);margin-bottom:20px;letter-spacing:.06em}
-.hero h1{font-size:clamp(32px,5vw,48px);font-weight:700;color:var(--black);line-height:1.12;letter-spacing:-.03em;margin-bottom:16px}
-.hero .sub{font-size:17px;color:var(--g500);line-height:1.65;max-width:540px;margin-bottom:32px}
-.hero .sub strong{color:var(--black);font-weight:600}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.btn{font-family:var(--mono);font-size:12px;font-weight:500;padding:10px 20px;border-radius:6px;text-decoration:none;transition:all .15s;display:inline-block;letter-spacing:.02em}
-.btn-dark{background:var(--black);color:var(--white);border:1px solid var(--black)}
-.btn-dark:hover{background:var(--g800)}
-.btn-light{background:var(--white);color:var(--black);border:1px solid var(--g300)}
-.btn-light:hover{border-color:var(--g500)}
+.hero{padding:64px 0 48px}
+.hero h1{font-size:clamp(28px,4.5vw,40px);font-weight:700;color:var(--black);line-height:1.15;letter-spacing:-.03em;margin-bottom:16px}
+.hero .sub{font-size:15px;color:var(--g500);line-height:1.7;max-width:520px;margin-bottom:28px}
+.install{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--g700);background:var(--g50);border:1px solid var(--g200);padding:8px 14px;border-radius:6px;cursor:pointer;user-select:all;margin-bottom:6px}
+.install:hover{border-color:var(--g400)}
+.note{font-size:12px;color:var(--g400);margin-top:8px}
 
-/* Install */
-.install{margin-top:24px;display:flex;align-items:center;gap:10px}
-.install code{font-family:var(--mono);font-size:12px;color:var(--g700);background:var(--g50);border:1px solid var(--g200);padding:8px 14px;border-radius:6px;cursor:pointer;transition:border-color .15s;user-select:all}
-.install code:hover{border-color:var(--g400)}
-.install .copied{font-family:var(--mono);font-size:10px;color:var(--g400);opacity:0;transition:opacity .2s}
-.install .copied.show{opacity:1}
-
-/* Divider */
 hr{border:none;height:1px;background:var(--g200);margin:0}
 
-/* Sections */
-section{padding:64px 0}
-section h2{font-size:22px;font-weight:700;color:var(--black);letter-spacing:-.02em;margin-bottom:6px}
-section p.desc{font-size:14px;color:var(--g500);margin-bottom:24px;line-height:1.65}
+section{padding:48px 0}
+section h2{font-size:18px;font-weight:700;color:var(--black);letter-spacing:-.01em;margin-bottom:6px}
+section p.desc{font-size:14px;color:var(--g500);margin-bottom:20px;line-height:1.65}
 
-/* Numbers */
-.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--g200);border:1px solid var(--g200);border-radius:8px;overflow:hidden;margin-bottom:48px}
-.num{background:var(--white);padding:20px 16px;text-align:center}
-.num .v{font-size:24px;font-weight:700;color:var(--black);letter-spacing:-.02em}
-.num .l{font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase;letter-spacing:.08em}
-
-/* Grid */
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--g200);border:1px solid var(--g200);border-radius:8px;overflow:hidden;margin-bottom:24px}
-.cell{background:var(--white);padding:24px 20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--g200);border:1px solid var(--g200);border-radius:6px;overflow:hidden;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--g200);border:1px solid var(--g200);border-radius:6px;overflow:hidden;margin-bottom:20px}
+.cell{background:var(--white);padding:20px 16px}
 .cell h3{font-size:13px;font-weight:600;color:var(--black);margin-bottom:4px}
 .cell p{font-size:12px;color:var(--g500);line-height:1.55;margin:0}
+.cell.muted h3{color:var(--g500)}
+.cell.muted p{color:var(--g400)}
 
-/* Code */
-.code{background:var(--g900);border-radius:8px;overflow:hidden;margin-bottom:24px}
-.code-bar{padding:10px 16px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--g700)}
-.code-bar span{width:7px;height:7px;border-radius:50%}
-.code-bar span:nth-child(1){background:#ef4444}.code-bar span:nth-child(2){background:#eab308}.code-bar span:nth-child(3){background:#22c55e}
-.code-bar .fname{font-family:var(--mono);font-size:10px;color:var(--g400);margin-left:8px}
-.code pre{padding:20px;font-family:var(--mono);font-size:11.5px;line-height:1.75;color:var(--g300);overflow-x:auto;margin:0;white-space:pre}
-.code pre .s{color:#86efac}.code pre .c{color:var(--g600)}
+.code{background:var(--g900);border-radius:6px;overflow:hidden;margin-bottom:20px}
+.code-bar{padding:8px 14px;display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--g700)}
+.code-bar span{width:6px;height:6px;border-radius:50%}
+.code-bar span:nth-child(1){background:#ef4444}
+.code-bar span:nth-child(2){background:#eab308}
+.code-bar span:nth-child(3){background:#22c55e}
+.code-bar .f{font-family:var(--mono);font-size:10px;color:var(--g400);margin-left:6px}
+.code pre{padding:16px;font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--g300);overflow-x:auto;margin:0;white-space:pre}
+.code pre .s{color:#86efac}
+.code pre .c{color:#525252}
 
-/* Table */
-.tbl{width:100%;border-collapse:collapse;border:1px solid var(--g200);border-radius:8px;overflow:hidden;font-size:13px}
-.tbl th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:12px 16px;text-align:left;background:var(--g50);border-bottom:1px solid var(--g200);color:var(--g500)}
-.tbl td{padding:10px 16px;border-bottom:1px solid var(--g100);color:var(--g600)}
-.tbl td:first-child{font-weight:500;color:var(--black)}
-.tbl tr:last-child td{border-bottom:none}
-.tbl .y{color:#16a34a}.tbl .n{color:#dc2626}
+.tag{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.04em;margin-left:6px;position:relative;top:-1px}
+.tag-g{background:#f0fdf4;color:#16a34a;border:1px solid #dcfce7}
+.tag-y{background:#fefce8;color:#a16207;border:1px solid #fef9c3}
 
-/* Tools */
-.cat{border:1px solid var(--g200);border-radius:8px;margin-bottom:6px;overflow:hidden}
-.cat-h{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none;transition:background .1s}
+.cat{border:1px solid var(--g200);border-radius:6px;margin-bottom:4px;overflow:hidden}
+.cat-h{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none}
 .cat-h:hover{background:var(--g50)}
-.cat-h .name{font-size:13px;font-weight:600;color:var(--black);flex:1}
-.cat-h .cnt{font-family:var(--mono);font-size:10px;color:var(--g400);background:var(--g100);padding:1px 6px;border-radius:4px}
-.cat-h .arr{font-size:10px;color:var(--g400);transition:transform .2s}
-.cat-h .arr.open{transform:rotate(90deg)}
-.cat-b{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.cat-b.open{max-height:700px}
-.cat-b .row{display:flex;align-items:baseline;gap:8px;padding:4px 16px;font-size:11px}
-.cat-b .row:last-child{padding-bottom:12px}
-.cat-b .rn{font-family:var(--mono);font-weight:500;color:var(--black);min-width:180px;flex-shrink:0}
+.cat-h .nm{font-size:13px;font-weight:600;color:var(--black);flex:1}
+.cat-h .ct{font-family:var(--mono);font-size:10px;color:var(--g400);background:var(--g100);padding:1px 5px;border-radius:3px}
+.cat-h .ar{font-size:9px;color:var(--g400);transition:transform .2s}
+.cat-h .ar.open{transform:rotate(90deg)}
+.cat-b{max-height:0;overflow:hidden;transition:max-height .3s}
+.cat-b.open{max-height:600px}
+.cat-b .r{display:flex;align-items:baseline;gap:8px;padding:3px 14px;font-size:11px}
+.cat-b .r:last-child{padding-bottom:10px}
+.cat-b .rn{font-family:var(--mono);font-weight:500;color:var(--black);min-width:160px;flex-shrink:0}
 .cat-b .rd{color:var(--g500)}
 
-/* Footer */
-footer{border-top:1px solid var(--g200);padding:32px 0;text-align:center}
-footer p{font-size:11px;color:var(--g400)}
+footer{border-top:1px solid var(--g200);padding:32px 0}
+footer p{font-size:11px;color:var(--g400);line-height:1.7}
+footer a{color:var(--g400)}
 
-@media(max-width:640px){
-  .nums{grid-template-columns:repeat(2,1fr)}
-  .grid-3{grid-template-columns:1fr}
-  .hero{padding:48px 0 40px}
-  .cat-b .rn{min-width:140px}
+@media(max-width:600px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .hero{padding:40px 0 32px}
+  .cat-b .rn{min-width:130px}
   .nav-r a:not(:last-child){display:none}
 }
 </style>
 </head>
 <body>
 
-<nav><div class="w"><a href="#" class="logo">CONDUCTOR</a><div class="nav-r"><a href="#tools">Tools</a><a href="#setup">Setup</a><a href="https://github.com/dragoon0x/conductor">GitHub</a><span class="pill">v3</span></div></div></nav>
+<nav><div class="w"><a href="#" class="logo">CONDUCTOR</a><div class="nav-r"><a href="#works">What works</a><a href="#setup">Setup</a><a href="https://github.com/dragoon0x/conductor">GitHub</a></div></div></nav>
 
 <div class="w">
 
 <section class="hero">
-  <p class="label">MCP server for Figma</p>
-  <h1>Other MCP tools draw rectangles.<br>This one designs.</h1>
-  <p class="sub">201 tools with <strong>built-in design intelligence</strong>. Every spacing value hits the 8px grid. Every button gets a 44px touch target. Every color pair passes WCAG contrast. Works with Cursor and Claude Code.</p>
-  <div class="actions">
-    <a href="#setup" class="btn btn-dark">Get started</a>
-    <a href="https://github.com/dragoon0x/conductor" class="btn btn-light">GitHub</a>
-  </div>
-  <div class="install">
-    <code onclick="this.nextElementSibling.classList.add('show');navigator.clipboard?.writeText('npx conductor-figma');setTimeout(()=>this.nextElementSibling.classList.remove('show'),1500)">npx conductor-figma</code>
-    <span class="copied">copied</span>
-  </div>
+<h1>An MCP server for Figma that tries to understand design.</h1>
+<p class="sub">201 tools. Snaps spacing to 8px grid. Enforces 44px touch targets. Resolves font weights. Checks WCAG contrast. The generative stuff produces clean wireframes, not finished designs. The utility tools are genuinely useful.</p>
+<div class="install" onclick="navigator.clipboard?.writeText('npx conductor-figma')">npx conductor-figma</div>
+<div class="note">Experimental. Things break. DYOR. <a href="https://github.com/dragoon0x/conductor" style="color:var(--g400)">GitHub</a></div>
 </section>
 
-<div class="nums">
-  <div class="num"><div class="v">201</div><div class="l">Tools</div></div>
-  <div class="num"><div class="v">17</div><div class="l">Categories</div></div>
-  <div class="num"><div class="v">18</div><div class="l">Smart Components</div></div>
-  <div class="num"><div class="v">758</div><div class="l">Tests passing</div></div>
+<hr>
+
+<section id="works">
+<h2>What actually works well</h2>
+<p class="desc">These are the tools I use daily. They do one thing and they do it right.</p>
+
+<div class="grid-2">
+<div class="cell"><h3>Contrast checker</h3><p>Two hex colors in, WCAG AA/AAA result out. Instant. I use this constantly.</p></div>
+<div class="cell"><h3>Design system scanner</h3><p>Scans your Figma file. Lists every color, font, spacing value, and radius in use. Finds inconsistencies.</p></div>
+<div class="cell"><h3>Batch replace color</h3><p>Swap one color for another across your entire file. Actually works.</p></div>
+<div class="cell"><h3>Type scale generator</h3><p>Pick a ratio, get all the sizes. Saves Googling "major second type scale" for the hundredth time.</p></div>
+<div class="cell"><h3>Color palette</h3><p>One hex in, full semantic palette out. Background, surface, border, text levels, status colors. Dark + light.</p></div>
+<div class="cell"><h3>Craft guide</h3><p>Returns the design rules the system follows. Typography, spacing, color, anti-patterns. Good reference.</p></div>
 </div>
-
-<hr>
-
-<!-- What it does -->
-<section>
-  <h2>What design intelligence means</h2>
-  <p class="desc">You say "create a button." A typical MCP makes a rectangle. Conductor makes a 44px-tall frame with 20px horizontal padding, 10px radius, 15px Semi Bold text — because that's what a button is.</p>
-
-  <div class="grid-3">
-    <div class="cell"><h3>8px grid</h3><p>Every padding, margin, and gap snapped to the 8px grid. No 13px. No 27px. Always clean multiples.</p></div>
-    <div class="cell"><h3>Type scale</h3><p>Font sizes follow mathematical ratios. Headings, body, captions — all related. Not random numbers.</p></div>
-    <div class="cell"><h3>Semantic colors</h3><p>One brand hex → full palette. Background, surface, border, 3 text levels, status colors. Dark + light.</p></div>
-    <div class="cell"><h3>Accessibility</h3><p>WCAG AA/AAA contrast checking. 44px touch targets enforced. Color blindness simulation.</p></div>
-    <div class="cell"><h3>Auto-layout</h3><p>Every frame uses Figma auto-layout. Proper padding, gap, alignment. Zero absolute positioning.</p></div>
-    <div class="cell"><h3>Font weights</h3><p>"bold" → "Bold". "600" → "Semi Bold". Font weight resolution is automatic on every text node.</p></div>
-  </div>
 </section>
 
 <hr>
 
-<!-- Comparison -->
 <section>
-  <h2>Typical MCP vs. Conductor</h2>
-  <p class="desc">Most Figma MCP servers are API wrappers. You give exact pixel values, they obey — even when those values are wrong. Conductor applies design rules before anything touches the canvas.</p>
+<h2>What works but is rough</h2>
+<p class="desc">These produce correct structure with proper spacing. But the visual output is basic. Starting points, not final designs.</p>
 
-  <table class="tbl">
-    <thead><tr><th>Capability</th><th>Others</th><th>Conductor</th></tr></thead>
-    <tbody>
-      <tr><td>Design intelligence</td><td class="n">✗</td><td class="y">✓ Grid-snapped</td></tr>
-      <tr><td>Smart components</td><td class="n">✗</td><td class="y">✓ 18 types</td></tr>
-      <tr><td>Accessibility audit</td><td class="n">✗</td><td class="y">✓ 12 tools</td></tr>
-      <tr><td>Code export</td><td class="n">✗</td><td class="y">✓ React, Tailwind, Vue, Svelte</td></tr>
-      <tr><td>Batch operations</td><td class="n">✗</td><td class="y">✓ 17 tools</td></tr>
-      <tr><td>Design system scan</td><td class="n">✗</td><td class="y">✓ Scan, normalize, lint</td></tr>
-      <tr><td>Responsive</td><td class="n">✗</td><td class="y">✓ Breakpoints, mobile gen</td></tr>
-      <tr><td>Prototyping</td><td class="n">✗</td><td class="y">✓ Links, overlays, flows</td></tr>
-      <tr><td>Typography tools</td><td class="n">✗</td><td class="y">✓ Scale, audit, normalize</td></tr>
-      <tr><td>Annotations</td><td class="n">✗</td><td class="y">✓ Redlines, spec sheets</td></tr>
-    </tbody>
-  </table>
+<div class="grid-2">
+<div class="cell muted"><h3>Page generation <span class="tag tag-y">WIP</span></h3><p>Creates full pages with sections. Structure is right. Spacing is right. Looks like a wireframe though.</p></div>
+<div class="cell muted"><h3>Smart components <span class="tag tag-y">WIP</span></h3><p>A button looks like a button. Correct height, padding, radius. But they are simple.</p></div>
+<div class="cell muted"><h3>Code export <span class="tag tag-y">WIP</span></h3><p>Converts nodes to React + Tailwind. Needs more work before you would ship the output.</p></div>
+<div class="cell muted"><h3>Dashboard layouts <span class="tag tag-y">WIP</span></h3><p>Sidebar, KPI cards, chart area. Correct structure. Not something you screenshot for Twitter.</p></div>
+</div>
 </section>
 
 <hr>
 
-<!-- Setup -->
+<section>
+<h2>The idea behind it</h2>
+<p class="desc">Every other Figma MCP server is a shape proxy. You give pixel values, it obeys, even when those values are wrong. Conductor tries to fix the numbers before they reach the canvas.</p>
+
+<div class="grid-3">
+<div class="cell"><h3>8px grid</h3><p>You say 13px. Server snaps to 16px. Every padding, margin, gap.</p></div>
+<div class="cell"><h3>Touch targets</h3><p>Buttons get 44px minimum. Inputs match. Not negotiable.</p></div>
+<div class="cell"><h3>Font weights</h3><p>"bold" becomes "Bold". "600" becomes "Semi Bold". Automatic.</p></div>
+<div class="cell"><h3>Type scale</h3><p>7 ratio presets. Font sizes follow math, not guessing.</p></div>
+<div class="cell"><h3>Semantic colors</h3><p>One hex in, full palette out. bg, surface, border, 3 text levels.</p></div>
+<div class="cell"><h3>Auto-layout</h3><p>Every frame uses Figma auto-layout. Zero absolute positioning.</p></div>
+</div>
+</section>
+
+<hr>
+
 <section id="setup">
-  <h2>Setup</h2>
-  <p class="desc">Two steps. Under a minute.</p>
+<h2>Setup</h2>
+<p class="desc">Three steps. You need Cursor (or Claude Code), Figma Desktop, and a terminal.</p>
 
-  <div class="code">
-    <div class="code-bar"><span></span><span></span><span></span><span class="fname">~/.cursor/mcp.json</span></div>
-    <pre><span class="c">// Add to Cursor or Claude Code</span>
+<div class="code">
+<div class="code-bar"><span></span><span></span><span></span><span class="f">~/.cursor/mcp.json</span></div>
+<pre><span class="c">// Add this to your Cursor MCP config</span>
 {
   <span class="s">"mcpServers"</span>: {
     <span class="s">"conductor"</span>: {
@@ -203,82 +167,77 @@ footer p{font-size:11px;color:var(--g400)}
     }
   }
 }</pre>
-  </div>
+</div>
 
-  <p class="desc">Clone the repo. In Figma: Plugins → Development → Import plugin from manifest → select <code style="font-family:var(--mono);font-size:12px;background:var(--g100);padding:2px 6px;border-radius:3px">figma-plugin/manifest.json</code>. Run the plugin. Chat in Cursor.</p>
+<div class="grid-3">
+<div class="cell"><h3>1. Clone repo</h3><p>For the Figma plugin. Plugins > Development > Import from manifest.</p></div>
+<div class="cell"><h3>2. Add to Cursor</h3><p>Paste the config above. Or use a local path for faster startup.</p></div>
+<div class="cell"><h3>3. Run plugin</h3><p>Open Figma, run Conductor. Green dot = connected. Chat in Cursor.</p></div>
+</div>
 
-  <div class="grid-3" style="margin-top:16px">
-    <div class="cell"><h3>"Create a dashboard"</h3><p>Sidebar + KPI cards + chart area. Auto-layout, proper spacing, semantic naming.</p></div>
-    <div class="cell"><h3>"Audit this frame"</h3><p>Contrast ratios, touch targets, off-grid spacing, generic layer names — all flagged.</p></div>
-    <div class="cell"><h3>"Export as React"</h3><p>Any node tree → React + Tailwind, HTML/CSS, Vue, or Svelte. Production-ready.</p></div>
-  </div>
+<p class="desc" style="margin-top:4px">You may need to run <code style="font-family:var(--mono);font-size:12px;background:var(--g100);padding:2px 5px;border-radius:3px">npx conductor-figma</code> in a separate terminal tab for a stable Figma connection. Cursor restarts MCP processes unpredictably.</p>
 </section>
 
 <hr>
 
-<!-- Tools -->
-<section id="tools">
-  <h2>201 tools across 17 categories</h2>
-  <p class="desc">Click to expand.</p>
-  <div id="tw"></div>
+<section>
+<h2>Example prompts</h2>
+<p class="desc">What you can actually type in Cursor chat.</p>
+
+<div class="grid-2">
+<div class="cell"><h3>"Check contrast between #fff and #6366f1"</h3><p>Returns WCAG AA/AAA pass/fail. Works every time. <span class="tag tag-g">solid</span></p></div>
+<div class="cell"><h3>"Scan my file for off-grid spacing"</h3><p>Lists every value not on 8px grid. <span class="tag tag-g">solid</span></p></div>
+<div class="cell"><h3>"Replace all #6366f1 with #3b82f6"</h3><p>Swaps color across the entire file. <span class="tag tag-g">solid</span></p></div>
+<div class="cell"><h3>"Generate a type scale with major second ratio"</h3><p>Returns all sizes. <span class="tag tag-g">solid</span></p></div>
+<div class="cell"><h3>"Create a hero section with heading and CTA"</h3><p>Produces a frame with correct spacing. Basic but usable. <span class="tag tag-y">WIP</span></p></div>
+<div class="cell"><h3>"Build a dashboard with sidebar and KPI cards"</h3><p>Structure is right. Visuals are wireframe-level. <span class="tag tag-y">WIP</span></p></div>
+</div>
 </section>
 
 <hr>
 
-<!-- CTA -->
-<section style="text-align:center;padding:80px 0">
-  <h2 style="font-size:28px;margin-bottom:12px">Stop proxying shapes. Start designing.</h2>
-  <p class="desc" style="max-width:400px;margin:0 auto 28px">201 tools. 17 categories. Design intelligence in every call.</p>
-  <div class="actions" style="justify-content:center">
-    <a href="https://github.com/dragoon0x/conductor" class="btn btn-dark">Get started</a>
-    <a href="https://www.npmjs.com/package/conductor-figma" class="btn btn-light">npm</a>
-  </div>
+<section>
+<h2>201 tools, 17 categories</h2>
+<p class="desc">Click to expand. Honestly, maybe 40 of these are daily-useful. The rest exist so the AI knows it can use them.</p>
+
+<div id="tw"></div>
+</section>
+
+<hr>
+
+<section>
+<h2>Disclaimer</h2>
+<p style="font-size:12px;color:var(--g500);line-height:1.8;margin-bottom:16px">This is experimental, open-source software for educational purposes. Provided as-is with no warranties of any kind. The author is not liable for any damages, data loss, or corruption of Figma files. Not affiliated with Figma, Anthropic, or Anysphere. Always back up your files. DYOR. Use at your own risk.</p>
+<p style="font-size:11px;color:var(--g400);font-family:var(--mono)">MIT License · Copyright 2025 0xDragoon</p>
 </section>
 
 </div>
 
-<hr>
-
-<section style="padding:48px 0">
-  <h2>Disclaimer</h2>
-  <p style="font-size:12px;color:var(--g500);line-height:1.75;margin-top:12px">This software is provided strictly for <strong style="color:var(--g700)">educational and experimental purposes only</strong>. Do your own research (DYOR) before using in any production environment. By using this software, you acknowledge and agree to the following:</p>
-  <ul style="font-size:12px;color:var(--g500);line-height:1.85;margin:16px 0 0 20px;list-style:disc">
-    <li>This is <strong style="color:var(--g700)">experimental, open-source software</strong> provided "as-is" with absolutely no warranties, representations, or guarantees of any kind — express, implied, or statutory — including but not limited to warranties of merchantability, fitness for a particular purpose, accuracy, reliability, or non-infringement.</li>
-    <li>The author(s), contributor(s), and maintainer(s) of this project — including the individual known as 0xDragoon — <strong style="color:var(--g700)">shall not be held liable</strong> for any direct, indirect, incidental, special, consequential, or punitive damages, losses, costs, or expenses arising from or related to the use, misuse, inability to use, or reliance upon this software, including but not limited to loss of data, loss of revenue, business interruption, or damages to Figma files, design assets, or any other digital property.</li>
-    <li>This software interacts with third-party services (Figma, Cursor, Claude Code) over which the author has no control. The author assumes <strong style="color:var(--g700)">no responsibility</strong> for any changes, outages, API modifications, or policy updates by these third parties that may affect the functionality of this software.</li>
-    <li>No data collection, telemetry, or analytics are performed by this software. All operations run locally between your machine and the Figma desktop application. However, the author makes <strong style="color:var(--g700)">no guarantees</strong> regarding data security, privacy, or confidentiality.</li>
-    <li>This software is <strong style="color:var(--g700)">not affiliated with, endorsed by, or sponsored by</strong> Figma, Inc., Anthropic, PBC, Anysphere (Cursor), or any other company or organization.</li>
-    <li>Users are solely responsible for ensuring their use of this software complies with all applicable laws, regulations, terms of service, and licensing agreements — including Figma's Terms of Service and API usage policies.</li>
-    <li><strong style="color:var(--g700)">Use at your own risk.</strong> Always back up your Figma files before running any automated operations. The author is not responsible for any unintended modifications, deletions, or corruption of design files.</li>
-  </ul>
-  <p style="font-size:11px;color:var(--g400);margin-top:20px;font-family:var(--mono);letter-spacing:.02em">MIT License · Copyright © 2025 0xDragoon · Full license text available in the repository.</p>
-</section>
-
-<footer><p>CONDUCTOR v3.0.0 · MIT · 0xDragoon · Experimental software · DYOR · Use at your own risk</p></footer>
+<footer><div class="w"><p>conductor-figma · 201 tools · experimental · <a href="https://github.com/dragoon0x/conductor">github</a> · 0xDragoon</p></div></footer>
 
 <script>
-const C=[
-['Create & Layout',20,'Frames, text, shapes, smart components, sections, full pages, forms, tables, navs',[['create_frame','Auto-layout frame, grid-snapped spacing'],['create_text','Auto-resolved font weights'],['create_smart_component','18 types: button, input, card, modal, avatar, badge, chip, switch, tabs, table, dropdown, progress, skeleton, divider, tooltip, toast, checkbox, radio'],['create_section','Hero, features, pricing, CTA, testimonials, FAQ, footer, stats'],['create_page','Landing, pricing, dashboard, login, signup, blog, docs, 404'],['create_form','Labeled inputs, validation, submit'],['create_table_frame','Headers, rows, proper spacing'],['create_nav_bar','Logo, links, CTA button'],['+ 12 more','rectangle, ellipse, line, svg_node, component, instance, component_set, auto_layout, card_grid, sidebar_layout, footer, header']]],
-['Modify & Style',25,'Fills, strokes, shadows, gradients, transforms',[['modify_node','Any property: position, size, fill, radius'],['set_fill','Solid + linear/radial/angular gradients'],['set_effects','Shadow presets (sm/md/lg/xl), blur'],['+ 22 more','stroke, image_fill, text_range, constraints, delete, move, duplicate, group, ungroup, resize, align, corner_radius, opacity, blend_mode, clip, rename, lock, visibility, reorder, layout_sizing, flatten, rotation']]],
-['Vector & Shape',8,'Paths, booleans, polygons, 35 built-in icons',[['create_vector','Custom SVG paths'],['boolean_operation','Union, subtract, intersect, exclude'],['create_icon','35 icons: arrows, check, x, search, menu, settings, user, heart, star, home, mail, lock, bell, edit, trash, download, upload, eye, link, share, filter, grid, list, clock, calendar, phone, copy, chevrons'],['+ 5 more','polygon, star, arrow, divider, offset_path']]],
-['Read & Inspect',18,'Selection, search, node info, CSS output, fonts',[['get_selection','Full properties'],['find_nodes','By name, type, scope'],['read_node_css','CSS / Tailwind / React inline'],['measure_distance','Between two nodes'],['+ 14 more','page_structure, node_info, nodes_info, styles, variables, components, pages, doc_info, set_selection, focus, annotations, set_annotation, fonts, selection_colors']]],
-['Variables & Tokens',10,'Collections, modes, W3C import/export',[['create_design_tokens','Full token system from one brand color'],['import_tokens','W3C Design Token JSON'],['export_tokens','JSON, CSS, SCSS, Tailwind'],['+ 7 more','collection, variable, bind, get, update, delete, swap_mode']]],
-['Export & Code',12,'React, Tailwind, SVG, PNG, design specs',[['export_to_react','React + Tailwind, HTML, Vue, Svelte'],['export_design_specs','Markdown, JSON, or HTML'],['generate_stylesheet','Complete CSS/SCSS/Tailwind from file'],['+ 9 more','svg, png, color_palette, typography, assets, screenshot, copy_css, component_inventory, spacing_tokens']]],
-['Accessibility & Lint',12,'WCAG audit, contrast, touch targets, design rules',[['audit_accessibility','Full WCAG audit'],['check_contrast','AA/AAA ratio'],['lint_design','Spacing, naming, fonts, alignment'],['color_blindness_check','4 simulation types'],['+ 8 more','fix_touch_targets, fix_spacing, check_naming, suggest_improvements, validate_component, check_consistency, a11y_report, responsive_check']]],
-['Batch Operations',17,'Rename, style, replace, clean — in bulk',[['batch_rename','Pattern: "Card {n}"'],['batch_replace_text','Find/replace globally'],['batch_replace_color','Swap color everywhere'],['clean_hidden_layers','Remove hidden, with dry-run'],['+ 13 more','style, resize, align, delete, duplicate, visibility, lock, select_by_type, set_font, round_values, remove_strokes, remove_effects, set_corner_radius']]],
-['Design System',10,'Scan, extract, normalize, lint',[['scan_design_system','Extract colors, fonts, spacing, radii'],['detect_inconsistencies','Off-grid, generic names'],['normalize_design','Auto-fix to match system'],['+ 7 more','craft_guide, color_palette, type_scale, style_guide, extract_components, import, compare']]],
-['Responsive',5,'Breakpoints, mobile gen, stacking',[['create_responsive_variant','Mobile/tablet/desktop'],['generate_mobile','Mobile version'],['stack_for_mobile','Horizontal → vertical'],['convert_to_responsive','Fixed → auto-layout'],['set_breakpoint','Standard breakpoint']]],
-['Typography',10,'Scale, audit, normalize, replace',[['type_scale_apply','Apply ratio to all text'],['type_audit','Find off-scale sizes'],['type_normalize','Snap to scale'],['type_replace_font','Replace globally'],['+ 6 more','set_text_content, hierarchy, measure, list_styles, pair_suggest, create_style']]],
-['Color',10,'Palettes, harmonies, dark/light mode',[['color_palette_generate','50-950 shades'],['color_harmonize','Complementary, triadic, analogous'],['color_darkmode','Dark mode variant'],['+ 7 more','lightmode, semantic, extract, check_all, create_style, apply_style, replace_global']]],
-['Prototype',10,'Links, overlays, scroll, hover, flows',[['create_prototype_link','Trigger + transition'],['create_overlay','Modal with dismiss'],['set_fixed_position','Sticky elements'],['+ 7 more','hover_state, scroll, overflow, flow, list_flows, remove_link, set_transition']]],
-['Pages',8,'Create, switch, duplicate, sort',[['create_new_page','New page'],['duplicate_page','Duplicate'],['page_overview','Stats overview'],['+ 5 more','switch, delete, rename, sort, merge']]],
-['Library',8,'Search, swap, detach, audit',[['search_library','Local + team'],['swap_component','Preserve overrides'],['component_audit','Missing, detached, unused'],['+ 5 more','batch_swap, list_libraries, detach, reset_overrides, publish']]],
-['Annotation',10,'Redlines, spec sheets, changelogs',[['annotate_spacing','Visual redlines'],['create_spec_sheet','Full measurement spec'],['create_changelog','Visual diff between frames'],['+ 7 more','colors, typography, measurement, grid, hierarchy, responsive, component_docs']]],
-['Effects',8,'Glass, neumorphism, gradients, shadows',[['create_glassmorphism','Blur + transparent fill'],['set_gradient_fill','Angle + 2 colors'],['create_shadow_system','Elevation styles'],['+ 5 more','neumorphism, noise_texture, border_gradient, backdrop_blur, remove_all']]],
+var C=[
+['Create & Layout',20,[['create_frame','Auto-layout frame, grid-snapped'],['create_text','Auto-resolved font weights'],['create_smart_component','18 types: button, input, card, modal, etc'],['create_section','Hero, features, pricing, CTA, FAQ, footer'],['create_page','Landing, dashboard, login, blog, 404'],['+ 15 more','rectangle, ellipse, line, svg, component, instance, set, auto_layout, form, table, nav, card_grid, sidebar, footer, header']]],
+['Modify & Style',25,[['modify_node','Edit any property'],['set_fill','Solid + gradients'],['set_effects','Shadow presets, blur'],['+ 22 more','stroke, image, text_range, constraints, delete, move, duplicate, group, ungroup, resize, align, radius, opacity, blend, clip, rename, lock, visibility, reorder, sizing, flatten, rotation']]],
+['Vector & Shape',8,[['create_icon','35 built-in SVG icons'],['boolean_operation','Union, subtract, intersect, exclude'],['+ 6 more','vector, polygon, star, arrow, divider, offset_path']]],
+['Read & Inspect',18,[['get_selection','Current selection with properties'],['find_nodes','Search by name or type'],['read_node_css','CSS / Tailwind output'],['+ 15 more','page_structure, node_info, styles, variables, components, pages, doc_info, selection, focus, annotations, fonts, colors, measure, nodes_info, set_annotation']]],
+['Variables & Tokens',10,[['create_design_tokens','Full system from one brand color'],['export_tokens','JSON, CSS, SCSS, Tailwind'],['+ 8 more','collection, variable, bind, get, update, delete, import, swap_mode']]],
+['Export & Code',12,[['export_to_react','React + Tailwind, HTML, Vue, Svelte'],['export_design_specs','Markdown, JSON, HTML specs'],['+ 10 more','svg, png, stylesheet, color_palette, typography, assets, screenshot, css, inventory, spacing']]],
+['Accessibility & Lint',12,[['check_contrast','WCAG AA/AAA ratio'],['audit_accessibility','Full audit'],['lint_design','Spacing, naming, fonts'],['+ 9 more','touch_targets, fix_spacing, naming, improvements, validate, consistency, a11y_report, colorblind, responsive']]],
+['Batch Operations',17,[['batch_replace_color','Swap color everywhere'],['batch_rename','Pattern: "Card {n}"'],['clean_hidden_layers','Remove hidden, with dry-run'],['+ 14 more','style, text, resize, align, delete, duplicate, visibility, lock, select_type, font, round, strokes, effects, radius']]],
+['Design System',10,[['scan_design_system','Extract colors, fonts, spacing'],['detect_inconsistencies','Off-grid, generic names'],['+ 8 more','normalize, craft_guide, palette, scale, style_guide, components, import, compare']]],
+['Responsive',5,[['create_responsive_variant','Mobile/tablet/desktop'],['+ 4 more','breakpoint, convert, mobile, stack']]],
+['Typography',10,[['type_scale_apply','Apply ratio to all text'],['type_audit','Find off-scale sizes'],['+ 8 more','normalize, replace_font, text_content, hierarchy, measure, styles, pair, create_style']]],
+['Color',10,[['color_palette_generate','50-950 shades'],['color_harmonize','Complementary, triadic, analogous'],['+ 8 more','darkmode, lightmode, semantic, extract, check_all, create_style, apply, replace']]],
+['Prototype',10,[['create_prototype_link','Trigger + transition'],['create_overlay','Modal with dismiss'],['+ 8 more','fixed_position, hover, scroll, overflow, flow, flows, remove, transition']]],
+['Pages',8,[['create_new_page','New page'],['page_overview','Stats overview'],['+ 6 more','switch, duplicate, delete, rename, sort, merge']]],
+['Library',8,[['search_library','Local + team'],['component_audit','Missing, detached, unused'],['+ 6 more','swap, batch_swap, libraries, detach, reset, publish']]],
+['Annotation',10,[['annotate_spacing','Visual redlines'],['create_spec_sheet','Full measurement spec'],['+ 8 more','colors, typography, measurement, grid, hierarchy, docs, responsive, changelog']]],
+['Effects',8,[['create_glassmorphism','Blur + transparent fill'],['set_gradient_fill','Angle + 2 colors'],['+ 6 more','shadow_system, neumorphism, noise, border_gradient, backdrop, remove_all']]],
 ];
-const tw=document.getElementById('tw');
-C.forEach(c=>{const d=document.createElement('div');d.className='cat';d.innerHTML='<div class="cat-h" onclick="tog(this)"><span class="name">'+c[0]+'</span><span class="cnt">'+c[1]+'</span><span class="arr">▸</span></div><div class="cat-b">'+c[3].map(t=>'<div class="row"><span class="rn">'+t[0]+'</span><span class="rd">'+t[1]+'</span></div>').join('')+'</div>';tw.appendChild(d)});
-function tog(h){h.nextElementSibling.classList.toggle('open');h.querySelector('.arr').classList.toggle('open')}
+var tw=document.getElementById('tw');
+C.forEach(function(c){var d=document.createElement('div');d.className='cat';d.innerHTML='<div class="cat-h" onclick="tog(this)"><span class="nm">'+c[0]+'</span><span class="ct">'+c[1]+'</span><span class="ar">&#9656;</span></div><div class="cat-b">'+c[2].map(function(t){return'<div class="r"><span class="rn">'+t[0]+'</span><span class="rd">'+t[1]+'</span></div>'}).join('')+'</div>';tw.appendChild(d)});
+function tog(h){h.nextElementSibling.classList.toggle('open');h.querySelector('.ar').classList.toggle('open')}
 </script>
 </body>
 </html>
