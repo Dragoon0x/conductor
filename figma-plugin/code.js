@@ -281,8 +281,8 @@ async function executeCommand(cmd, data) {
         const s = data.shadow
         effects.push({
           type: 'DROP_SHADOW', visible: true,
-          color: { ...hexToRGB(s.color || '#00000040'), a: 0.25 },
-          offset: { x: s.offsetX || s.offset?.x || 0, y: s.offsetY || s.offset?.y || 4 },
+          color: (function(){ var c = hexToRGB(s.color || "#00000040"); return {r:c.r,g:c.g,b:c.b,a:0.25}; })(),
+          offset: { x: s.offsetX || (s.offset && s.offset.x) || 0, y: s.offsetY || (s.offset && s.offset.y) || 4 },
           radius: s.blur || 8, spread: s.spread || 0,
         })
       }
@@ -427,7 +427,7 @@ async function executeCommand(cmd, data) {
       const node = getNode(data.nodeId)
       if (!node || node.type !== 'GROUP') throw new Error('Not a group')
       const parent = node.parent
-      const children = [...node.children]
+      const children = Array.prototype.slice.call(node.children)
       for (const child of children) parent.appendChild(child)
       node.remove()
       return { ungrouped: children.length }
@@ -521,7 +521,7 @@ async function executeCommand(cmd, data) {
 
     case 'list_available_fonts': {
       const fonts = await figma.listAvailableFontsAsync()
-      const families = [...new Set(fonts.map(f => f.fontName.family))].sort()
+      const families = Array.from(new Set(fonts.map(f => f.fontName.family))).sort()
       return { count: families.length, families: families.slice(0, 100) }
     }
 
@@ -532,7 +532,7 @@ async function executeCommand(cmd, data) {
           node.fills.forEach(f => { if (f.type === 'SOLID') colors.add(rgbToHex(f.color)) })
         }
       }
-      return [...colors]
+      return Array.from(colors)
     }
 
     case 'measure_distance': {
@@ -660,7 +660,7 @@ async function executeCommand(cmd, data) {
           const newFills = n.fills.map(f => {
             if (f.type === 'SOLID' && Math.abs(f.color.r - findRgb.r) < 0.02 && Math.abs(f.color.g - findRgb.g) < 0.02 && Math.abs(f.color.b - findRgb.b) < 0.02) {
               count++
-              return { ...f, color: hexToRGB(data.replace) }
+              var nf = {type:f.type,color:hexToRGB(data.replace),opacity:f.opacity}; return nf
             }
             return f
           })
@@ -717,10 +717,10 @@ async function executeCommand(cmd, data) {
         return false
       })
       return {
-        colors: [...colors].sort(),
-        fonts: [...fonts].sort(),
-        radii: [...radii].sort((a,b) => a-b),
-        spacings: [...spacings].sort((a,b) => a-b),
+        colors: Array.from(colors).sort(),
+        fonts: Array.from(fonts).sort(),
+        radii: Array.from(radii).sort(function(a,b){return a-b}),
+        spacings: Array.from(spacings).sort(function(a,b){return a-b}),
       }
     }
 
