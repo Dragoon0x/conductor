@@ -131,6 +131,60 @@ const CREATE = {
     mode: enm(['dark','light'], 'Color mode', 'dark'),
     width: opt('number', 'Frame width', 1440),
   }, 'create'),
+
+  create_table_frame: tool('create_table_frame', 'Create a data table with headers, rows, and proper spacing.', {
+    columns: { type:'array', items:{type:'string'}, description:'Column headers', _required:true },
+    rows: opt('array', 'Row data: arrays of cell values'),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_form: tool('create_form', 'Create a form layout with labeled inputs, validation states, and submit button.', {
+    fields: { type:'array', items:{type:'object'}, description:'Fields: [{ label, type: "text|email|password|select|textarea", required }]', _required:true },
+    submitLabel: opt('string', 'Submit button text', 'Submit'),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_nav_bar: tool('create_nav_bar', 'Create a navigation bar with logo, links, and CTA button.', {
+    brand: opt('string', 'Brand name', 'acme'),
+    items: opt('array', 'Nav items: ["Features", "Pricing", "Docs"]'),
+    ctaText: opt('string', 'CTA button text'),
+    width: opt('number', 'Width', 1440),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_card_grid: tool('create_card_grid', 'Create a grid of cards with proper spacing and alignment.', {
+    columns: opt('number', 'Number of columns', 3),
+    cards: opt('array', 'Card data: [{ title, description, icon }]'),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_sidebar_layout: tool('create_sidebar_layout', 'Create a sidebar + main content layout with proper proportions.', {
+    sidebarWidth: opt('number', 'Sidebar width', 260),
+    totalWidth: opt('number', 'Total width', 1440),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_footer: tool('create_footer', 'Create a page footer with columns, links, and copyright.', {
+    brand: opt('string', 'Brand name'),
+    columns: opt('array', 'Footer columns: [{ title, links: ["Link 1", "Link 2"] }]'),
+    width: opt('number', 'Width', 1440),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
+
+  create_header: tool('create_header', 'Create a page header/hero with heading, subheading, and CTA.', {
+    heading: opt('string', 'Main heading'),
+    subheading: opt('string', 'Subheading text'),
+    ctaText: opt('string', 'CTA button text'),
+    width: opt('number', 'Width', 1440),
+    brandColor: opt('string', 'Accent color'),
+    parentId: opt('string', 'Parent node'),
+  }, 'create'),
 }
 
 // ═══ MODIFY & STYLE (25) ═══
@@ -498,6 +552,14 @@ const EXPORT = {
   export_typography: tool('export_typography', 'Export all text styles as a typography system.', {
     format: enm(['json','css','scss','tailwind'], 'Format', 'json'),
   }, 'export'),
+
+  export_component_inventory: tool('export_component_inventory', 'Export a complete inventory of all components with usage counts.', {
+    format: enm(['json','markdown','csv'], 'Format', 'json'),
+  }, 'export'),
+
+  export_spacing_tokens: tool('export_spacing_tokens', 'Export all spacing values used as a spacing token system.', {
+    format: enm(['json','css','scss','tailwind'], 'Format', 'json'),
+  }, 'export'),
 }
 
 // ═══ ACCESSIBILITY & LINT (12) ═══
@@ -624,6 +686,28 @@ const BATCH = {
     nodeId: req('string', 'Root node to clean'),
     dryRun: opt('boolean', 'Preview changes without deleting', false),
   }, 'batch'),
+
+  batch_set_font: tool('batch_set_font', 'Change font family on all text nodes in a scope.', {
+    fontFamily: req('string', 'New font family'),
+    nodeId: opt('string', 'Scope'),
+  }, 'batch'),
+
+  batch_round_values: tool('batch_round_values', 'Round all dimensions, positions, and spacing to whole pixels.', {
+    nodeId: req('string', 'Root node'),
+  }, 'batch'),
+
+  batch_remove_strokes: tool('batch_remove_strokes', 'Remove all strokes from nodes in a scope.', {
+    nodeId: req('string', 'Root node'),
+  }, 'batch'),
+
+  batch_remove_effects: tool('batch_remove_effects', 'Remove all effects from nodes in a scope.', {
+    nodeId: req('string', 'Root node'),
+  }, 'batch'),
+
+  batch_set_corner_radius: tool('batch_set_corner_radius', 'Set corner radius on all frames/rectangles in scope.', {
+    nodeId: req('string', 'Root node'),
+    radius: req('number', 'Corner radius'),
+  }, 'batch'),
 }
 
 // ═══ DESIGN SYSTEM (10) ═══
@@ -697,11 +781,348 @@ const RESPONSIVE = {
   }, 'responsive'),
 }
 
+// ═══ TYPOGRAPHY (10) ═══
+const TYPOGRAPHY = {
+  type_scale_apply: tool('type_scale_apply', 'Apply a type scale to all text in a frame. Maps headings, body, and caption sizes to the scale.', {
+    nodeId: req('string', 'Root frame'),
+    ratio: enm(['minor2','major2','minor3','major3','perfect4','aug4','perfect5','golden'], 'Scale ratio', 'major2'),
+    baseSize: opt('number', 'Base font size', 16),
+  }, 'typography'),
+
+  type_audit: tool('type_audit', 'Find every unique text style in a page. Flag off-scale sizes, inconsistent weights, and orphaned styles.', {
+    nodeId: opt('string', 'Scope node (page if omitted)'),
+  }, 'typography'),
+
+  type_set_hierarchy: tool('type_set_hierarchy', 'Set heading levels with proper size, weight, and line-height ratios.', {
+    nodeId: req('string', 'Root frame'),
+    levels: opt('number', 'Number of heading levels', 6),
+  }, 'typography'),
+
+  type_check_measure: tool('type_check_measure', 'Check line length (45-75 chars optimal), line-height, and letter-spacing for readability.', {
+    nodeId: req('string', 'Text node or frame to check'),
+  }, 'typography'),
+
+  type_normalize: tool('type_normalize', 'Normalize all text to the nearest type scale value. Fix off-scale sizes.', {
+    nodeId: req('string', 'Root frame'),
+    ratio: enm(['minor2','major2','minor3','major3','perfect4'], 'Scale ratio', 'major2'),
+  }, 'typography'),
+
+  type_list_styles: tool('type_list_styles', 'List all text styles with usage count.', {
+    nodeId: opt('string', 'Scope'),
+  }, 'typography'),
+
+  type_pair_suggest: tool('type_pair_suggest', 'Suggest font pairings based on currently loaded fonts.', {
+    primaryFont: opt('string', 'Primary font family'),
+  }, 'typography'),
+
+  type_replace_font: tool('type_replace_font', 'Replace one font family with another across all text nodes.', {
+    find: req('string', 'Font to replace'),
+    replace: req('string', 'Replacement font'),
+    nodeId: opt('string', 'Scope'),
+  }, 'typography'),
+
+  set_text_content: tool('set_text_content', 'Update text content of a text node without changing styles.', {
+    nodeId: req('string', 'Text node ID'),
+    text: req('string', 'New text content'),
+  }, 'typography'),
+
+  type_create_style: tool('type_create_style', 'Create a local text style from a text node.', {
+    nodeId: req('string', 'Text node to create style from'),
+    name: req('string', 'Style name'),
+  }, 'typography'),
+}
+
+// ═══ COLOR (10) ═══
+const COLOR = {
+  color_palette_generate: tool('color_palette_generate', 'Generate a full color palette (50-950 shades) from a base color.', {
+    baseColor: req('string', 'Base color hex'),
+    steps: opt('number', 'Number of shade steps', 10),
+  }, 'color'),
+
+  color_extract: tool('color_extract', 'Extract all unique colors from a frame and organize by usage frequency.', {
+    nodeId: req('string', 'Root node'),
+  }, 'color'),
+
+  color_harmonize: tool('color_harmonize', 'Generate harmonious colors: complementary, triadic, analogous, split-complementary.', {
+    baseColor: req('string', 'Base color hex'),
+    scheme: enm(['complementary','triadic','analogous','split-complementary','tetradic','monochromatic'], 'Color scheme'),
+  }, 'color'),
+
+  color_darkmode: tool('color_darkmode', 'Generate a dark mode variant of a frame, mapping all colors intelligently.', {
+    nodeId: req('string', 'Frame to convert'),
+    brandColor: opt('string', 'Brand color to preserve'),
+  }, 'color'),
+
+  color_lightmode: tool('color_lightmode', 'Generate a light mode variant of a dark frame.', {
+    nodeId: req('string', 'Frame to convert'),
+    brandColor: opt('string', 'Brand color to preserve'),
+  }, 'color'),
+
+  color_check_all: tool('color_check_all', 'Check WCAG contrast for every text/background pair in a frame.', {
+    nodeId: req('string', 'Root frame'),
+    standard: enm(['AA','AAA'], 'WCAG standard', 'AA'),
+  }, 'color'),
+
+  color_create_style: tool('color_create_style', 'Create a local color style.', {
+    name: req('string', 'Style name (e.g. "Primary/500")'),
+    color: req('string', 'Color hex'),
+  }, 'color'),
+
+  color_apply_style: tool('color_apply_style', 'Apply a color style to a node.', {
+    nodeId: req('string', 'Target node'),
+    styleName: req('string', 'Style name to apply'),
+    property: enm(['fill','stroke'], 'Property to apply to', 'fill'),
+  }, 'color'),
+
+  color_replace_global: tool('color_replace_global', 'Replace a color across the entire document (all pages).', {
+    find: req('string', 'Color to find (hex)'),
+    replace: req('string', 'Replacement color (hex)'),
+  }, 'color'),
+
+  color_generate_semantic: tool('color_generate_semantic', 'Generate a full semantic color system (bg, surface, border, text, brand, status) from one brand color.', {
+    brandColor: req('string', 'Brand color hex'),
+    mode: enm(['dark','light','both'], 'Color mode', 'both'),
+  }, 'color'),
+}
+
+// ═══ PROTOTYPE & INTERACTION (10) ═══
+const PROTOTYPE = {
+  create_prototype_link: tool('create_prototype_link', 'Create a prototype navigation link between two frames.', {
+    fromNodeId: req('string', 'Source node (trigger)'),
+    toNodeId: req('string', 'Destination frame'),
+    trigger: enm(['ON_CLICK','ON_HOVER','ON_PRESS','ON_DRAG','AFTER_TIMEOUT','MOUSE_ENTER','MOUSE_LEAVE','MOUSE_DOWN','MOUSE_UP'], 'Interaction trigger', 'ON_CLICK'),
+    transition: enm(['INSTANT','DISSOLVE','SLIDE_IN','SLIDE_OUT','PUSH','MOVE_IN','MOVE_OUT','SMART_ANIMATE'], 'Transition type', 'DISSOLVE'),
+    duration: opt('number', 'Transition duration ms', 300),
+  }, 'prototype'),
+
+  create_scroll_behavior: tool('create_scroll_behavior', 'Set scroll behavior on a frame.', {
+    nodeId: req('string', 'Frame node'),
+    direction: enm(['HORIZONTAL','VERTICAL','BOTH','NONE'], 'Scroll direction'),
+    overflow: enm(['VISIBLE','HIDDEN','SCROLL'], 'Overflow behavior', 'SCROLL'),
+  }, 'prototype'),
+
+  set_overflow: tool('set_overflow', 'Set overflow clipping on a frame.', {
+    nodeId: req('string', 'Frame node'),
+    clip: req('boolean', 'Clip content'),
+  }, 'prototype'),
+
+  create_overlay: tool('create_overlay', 'Set up a frame as a modal/overlay in prototype mode.', {
+    nodeId: req('string', 'Overlay frame'),
+    position: enm(['CENTER','TOP_LEFT','TOP_CENTER','TOP_RIGHT','BOTTOM_LEFT','BOTTOM_CENTER','BOTTOM_RIGHT','MANUAL'], 'Overlay position', 'CENTER'),
+    closeOnClickOutside: opt('boolean', 'Close when clicking outside', true),
+    backgroundDim: opt('number', 'Background dim opacity 0-1', 0.5),
+  }, 'prototype'),
+
+  set_fixed_position: tool('set_fixed_position', 'Pin a layer so it stays fixed during scroll (sticky nav, floating button).', {
+    nodeId: req('string', 'Node to pin'),
+    position: enm(['TOP','BOTTOM','LEFT','RIGHT'], 'Fixed position'),
+  }, 'prototype'),
+
+  create_hover_state: tool('create_hover_state', 'Create a hover variant interaction on a component.', {
+    nodeId: req('string', 'Component or instance'),
+    hoverVariant: req('string', 'Variant name for hover state'),
+  }, 'prototype'),
+
+  create_flow: tool('create_flow', 'Create a prototype flow starting point.', {
+    nodeId: req('string', 'Starting frame'),
+    name: req('string', 'Flow name'),
+  }, 'prototype'),
+
+  list_flows: tool('list_flows', 'List all prototype flows in the file.', {}, 'prototype'),
+
+  remove_prototype_link: tool('remove_prototype_link', 'Remove a prototype connection.', {
+    nodeId: req('string', 'Node to remove connection from'),
+  }, 'prototype'),
+
+  set_transition: tool('set_transition', 'Set the default transition for all prototype links on a frame.', {
+    nodeId: req('string', 'Frame node'),
+    transition: enm(['INSTANT','DISSOLVE','SLIDE_IN','SMART_ANIMATE'], 'Transition'),
+    duration: opt('number', 'Duration ms', 300),
+    easing: enm(['LINEAR','EASE_IN','EASE_OUT','EASE_IN_OUT','EASE_IN_BACK','EASE_OUT_BACK','CUSTOM_SPRING'], 'Easing', 'EASE_OUT'),
+  }, 'prototype'),
+}
+
+// ═══ PAGE MANAGEMENT (8) ═══
+const PAGE = {
+  create_new_page: tool('create_new_page', 'Create a new page in the document.', {
+    name: req('string', 'Page name'),
+  }, 'page'),
+
+  switch_page: tool('switch_page', 'Switch to a different page.', {
+    pageId: req('string', 'Page ID or name'),
+  }, 'page'),
+
+  duplicate_page: tool('duplicate_page', 'Duplicate an entire page.', {
+    pageId: req('string', 'Page to duplicate'),
+    name: opt('string', 'New page name'),
+  }, 'page'),
+
+  delete_page: tool('delete_page', 'Delete a page.', {
+    pageId: req('string', 'Page to delete'),
+  }, 'page'),
+
+  rename_page: tool('rename_page', 'Rename a page.', {
+    pageId: req('string', 'Page ID'),
+    name: req('string', 'New name'),
+  }, 'page'),
+
+  sort_pages: tool('sort_pages', 'Sort pages alphabetically or by custom order.', {
+    order: enm(['ALPHABETICAL','REVERSE','CUSTOM'], 'Sort order'),
+    customOrder: opt('array', 'Array of page IDs in desired order'),
+  }, 'page'),
+
+  merge_pages: tool('merge_pages', 'Move all content from one page into another.', {
+    sourcePageId: req('string', 'Page to merge from'),
+    targetPageId: req('string', 'Page to merge into'),
+  }, 'page'),
+
+  page_overview: tool('page_overview', 'Get an overview of all pages: name, frame count, component count.', {}, 'page'),
+}
+
+// ═══ LIBRARY & COMPONENTS EXTENDED (8) ═══
+const LIBRARY = {
+  search_library: tool('search_library', 'Search for components across local file and team libraries.', {
+    query: req('string', 'Search query'),
+    scope: enm(['LOCAL','TEAM','ALL'], 'Search scope', 'ALL'),
+  }, 'library'),
+
+  list_team_libraries: tool('list_team_libraries', 'List all available team libraries.', {}, 'library'),
+
+  swap_component: tool('swap_component', 'Swap one component instance for another.', {
+    instanceId: req('string', 'Instance to swap'),
+    newComponentId: req('string', 'New component ID'),
+    preserveOverrides: opt('boolean', 'Keep existing overrides', true),
+  }, 'library'),
+
+  detach_instance: tool('detach_instance', 'Detach a component instance to a regular frame.', {
+    nodeId: req('string', 'Instance to detach'),
+  }, 'library'),
+
+  reset_overrides: tool('reset_overrides', 'Reset all overrides on a component instance.', {
+    nodeId: req('string', 'Instance node'),
+  }, 'library'),
+
+  component_audit: tool('component_audit', 'Audit components: find detached instances, missing components, unused variants.', {
+    nodeId: opt('string', 'Scope'),
+  }, 'library'),
+
+  batch_swap_component: tool('batch_swap_component', 'Swap all instances of one component for another across the file.', {
+    oldComponentId: req('string', 'Component to replace'),
+    newComponentId: req('string', 'Replacement component'),
+  }, 'library'),
+
+  publish_components: tool('publish_components', 'Mark components as ready to publish to team library.', {
+    componentIds: { type:'array', items:{type:'string'}, description:'Components to mark', _required:true },
+  }, 'library'),
+}
+
+// ═══ ANNOTATION & HANDOFF (10) ═══
+const ANNOTATION = {
+  annotate_spacing: tool('annotate_spacing', 'Add visual spacing annotations (redlines) to a frame.', {
+    nodeId: req('string', 'Frame to annotate'),
+    showPadding: opt('boolean', 'Show padding values', true),
+    showGap: opt('boolean', 'Show gap values', true),
+    showMargin: opt('boolean', 'Show margin values', true),
+  }, 'annotation'),
+
+  annotate_colors: tool('annotate_colors', 'Add color swatch annotations to a frame.', {
+    nodeId: req('string', 'Frame to annotate'),
+  }, 'annotation'),
+
+  annotate_typography: tool('annotate_typography', 'Add typography annotations (font, size, weight, line-height) to text nodes.', {
+    nodeId: req('string', 'Frame to annotate'),
+  }, 'annotation'),
+
+  create_measurement: tool('create_measurement', 'Create a measurement line between two nodes showing distance.', {
+    nodeId1: req('string', 'First node'),
+    nodeId2: req('string', 'Second node'),
+    direction: enm(['HORIZONTAL','VERTICAL','AUTO'], 'Measurement direction', 'AUTO'),
+  }, 'annotation'),
+
+  create_spec_sheet: tool('create_spec_sheet', 'Generate a design specification sheet next to a frame with all measurements, colors, and typography.', {
+    nodeId: req('string', 'Frame to spec'),
+    position: enm(['RIGHT','BELOW'], 'Where to place spec', 'RIGHT'),
+  }, 'annotation'),
+
+  annotate_grid: tool('annotate_grid', 'Visualize the underlying grid and spacing system of a frame.', {
+    nodeId: req('string', 'Frame to annotate'),
+    gridSize: opt('number', 'Grid size to overlay', 8),
+  }, 'annotation'),
+
+  annotate_hierarchy: tool('annotate_hierarchy', 'Annotate the visual hierarchy: heading levels, reading order, focal points.', {
+    nodeId: req('string', 'Frame to annotate'),
+  }, 'annotation'),
+
+  create_component_docs: tool('create_component_docs', 'Generate documentation frames for a component showing all variants, props, and usage.', {
+    componentId: req('string', 'Component to document'),
+  }, 'annotation'),
+
+  annotate_responsive: tool('annotate_responsive', 'Annotate breakpoint behavior and responsive rules on a frame.', {
+    nodeId: req('string', 'Frame to annotate'),
+    breakpoints: opt('array', 'Breakpoints to annotate'),
+  }, 'annotation'),
+
+  create_changelog: tool('create_changelog', 'Compare two frames and generate a visual changelog showing what changed.', {
+    beforeNodeId: req('string', 'Before frame'),
+    afterNodeId: req('string', 'After frame'),
+  }, 'annotation'),
+}
+
+// ═══ EFFECTS & STYLES EXTENDED (8) ═══
+const EFFECTS = {
+  create_glassmorphism: tool('create_glassmorphism', 'Apply glassmorphism effect: background blur, semi-transparent fill, subtle border.', {
+    nodeId: req('string', 'Target frame'),
+    blur: opt('number', 'Blur amount', 16),
+    opacity: opt('number', 'Background opacity', 0.1),
+  }, 'effects'),
+
+  create_neumorphism: tool('create_neumorphism', 'Apply neumorphism effect: dual shadows (light + dark) with matching background.', {
+    nodeId: req('string', 'Target node'),
+    intensity: opt('number', 'Effect intensity 0-1', 0.5),
+  }, 'effects'),
+
+  create_noise_texture: tool('create_noise_texture', 'Add a subtle noise/grain texture overlay to a frame.', {
+    nodeId: req('string', 'Target frame'),
+    opacity: opt('number', 'Noise opacity', 0.05),
+    scale: opt('number', 'Noise scale', 1),
+  }, 'effects'),
+
+  set_gradient_fill: tool('set_gradient_fill', 'Set a gradient fill with a simple angle + 2 colors API.', {
+    nodeId: req('string', 'Target node'),
+    startColor: req('string', 'Start color hex'),
+    endColor: req('string', 'End color hex'),
+    angle: opt('number', 'Gradient angle in degrees', 180),
+  }, 'effects'),
+
+  create_shadow_system: tool('create_shadow_system', 'Generate a consistent shadow elevation system (sm, md, lg, xl) as effect styles.', {
+    baseColor: opt('string', 'Shadow base color', '#000000'),
+    scale: enm(['subtle','medium','dramatic'], 'Shadow intensity', 'medium'),
+  }, 'effects'),
+
+  apply_backdrop_blur: tool('apply_backdrop_blur', 'Apply background blur (frosted glass effect) to a frame.', {
+    nodeId: req('string', 'Target frame'),
+    amount: opt('number', 'Blur amount', 16),
+  }, 'effects'),
+
+  create_border_gradient: tool('create_border_gradient', 'Create a gradient border effect using a slightly larger frame behind.', {
+    nodeId: req('string', 'Target node'),
+    startColor: req('string', 'Start color hex'),
+    endColor: req('string', 'End color hex'),
+    width: opt('number', 'Border width', 1),
+  }, 'effects'),
+
+  remove_all_effects: tool('remove_all_effects', 'Remove all effects (shadows, blurs) from a node.', {
+    nodeId: req('string', 'Target node'),
+  }, 'effects'),
+}
+
 // ═══ ASSEMBLE ALL TOOLS ═══
 export const ALL_TOOLS = {
   ...CREATE, ...MODIFY, ...VECTOR, ...READ,
   ...VARIABLES, ...EXPORT, ...ACCESSIBILITY,
   ...BATCH, ...DESIGN_SYSTEM, ...RESPONSIVE,
+  ...TYPOGRAPHY, ...COLOR, ...PROTOTYPE,
+  ...PAGE, ...LIBRARY, ...ANNOTATION, ...EFFECTS,
 }
 
 export const TOOL_LIST = Object.values(ALL_TOOLS)
@@ -718,6 +1139,13 @@ export const CATEGORIES = {
   batch: Object.keys(BATCH),
   'design-system': Object.keys(DESIGN_SYSTEM),
   responsive: Object.keys(RESPONSIVE),
+  typography: Object.keys(TYPOGRAPHY),
+  color: Object.keys(COLOR),
+  prototype: Object.keys(PROTOTYPE),
+  page: Object.keys(PAGE),
+  library: Object.keys(LIBRARY),
+  annotation: Object.keys(ANNOTATION),
+  effects: Object.keys(EFFECTS),
 }
 
 export function getTool(name) { return ALL_TOOLS[name] || null }

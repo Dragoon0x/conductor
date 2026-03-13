@@ -1,7 +1,7 @@
 {
   "name": "conductor-figma",
   "version": "3.0.0",
-  "description": "Design-intelligent MCP server for Figma. 150+ tools with built-in design intelligence. Every tool knows typography, spacing, color, accessibility. Not a shape proxy — a design engine.",
+  "description": "Design-intelligent MCP server for Figma. 201 design-intelligent tools for Figma. Every tool knows typography, spacing, color, accessibility. Not a shape proxy — a design engine.",
   "author": "0xDragoon",
   "license": "MIT",
   "type": "module",

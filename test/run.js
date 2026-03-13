@@ -15,8 +15,8 @@ function assert(c, m) { if (c) { passed++; process.stdout.write('  ✓ ' + m + '
 function eq(a, b, m) { assert(a === b, m + ` (got: ${a})`) }
 
 console.log('\n  Tool Registry')
-assert(TOOL_COUNT >= 120, `${TOOL_COUNT} tools (≥150)`)
-assert(Object.keys(CATEGORIES).length >= 10, `${Object.keys(CATEGORIES).length} categories (≥10)`)
+assert(TOOL_COUNT >= 200, `${TOOL_COUNT} tools (≥150)`)
+assert(Object.keys(CATEGORIES).length >= 15, `${Object.keys(CATEGORIES).length} categories (≥15)`)
 assert(Array.isArray(TOOL_LIST), 'TOOL_LIST is array')
 
 console.log('\n  Categories')
@@ -46,8 +46,8 @@ assert(getTool('create_responsive_variant') !== null, 'create_responsive_variant
 assert(getTool('create_variable_collection') !== null, 'create_variable_collection exists')
 assert(getTool('nonexistent') === null, 'nonexistent returns null')
 
-console.log('\n  Figsor-equivalent tools (all 45+ covered)')
-const figsorTools = [
+console.log('\n  Core Figma tools (all covered)')
+const coreTools = [
   'create_frame', 'create_text', 'create_rectangle', 'create_ellipse', 'create_line',
   'create_svg_node', 'set_auto_layout', 'modify_node', 'set_stroke', 'set_effects',
   'delete_node', 'move_to_parent', 'get_selection', 'get_page_structure', 'get_node_info',
@@ -57,11 +57,11 @@ const figsorTools = [
   'create_component_set', 'create_variable_collection', 'create_variable', 'bind_variable',
   'get_variables', 'export_as_svg', 'get_design_craft_guide',
 ]
-for (const name of figsorTools) {
+for (const name of coreTools) {
   assert(getTool(name) !== null, `Has ${name}`)
 }
 
-console.log('\n  Tools BEYOND Figsor (Conductor exclusives)')
+console.log('\n  Conductor exclusive tools')
 const exclusives = [
   'create_smart_component', 'create_section', 'create_page', 'create_icon', 'create_divider',
   'audit_accessibility', 'check_contrast', 'fix_touch_targets', 'lint_design', 'fix_spacing',
@@ -87,7 +87,7 @@ let exclusiveCount = 0
 for (const name of exclusives) {
   if (getTool(name)) exclusiveCount++
 }
-assert(exclusiveCount >= 60, `${exclusiveCount} exclusive tools beyond Figsor (≥70)`)
+assert(exclusiveCount >= 60, `${exclusiveCount} exclusive tools beyond competitors (≥70)`)
 
 console.log('\n  Design Intelligence — Grid')
 eq(snap(13), 16, 'snap(13) → 16')
@@ -213,10 +213,45 @@ assert(guide.spacing.system !== null, 'Has spacing system')
 
 console.log('\n  Comparison')
 console.log(`  Conductor: ${TOOL_COUNT} tools`)
-console.log(`  Figsor:    ~45 tools`)
+console.log(`  Competitors: ~45 tools max`)
 console.log(`  Framelink: ~5 tools`)
 console.log(`  Official:  ~12 tools`)
-console.log(`  Advantage: ${TOOL_COUNT - 45} more tools than Figsor`)
+console.log(`  Advantage: ${TOOL_COUNT - 45} more tools than any competitor`)
+
+// ─── New v3 Categories ───
+console.log('\n  New Tool Categories')
+const newCats = ['typography','color','prototype','page','library','annotation','effects']
+for (const cat of newCats) {
+  const tools = CATEGORIES[cat]
+  assert(tools && tools.length > 0, `${cat}: ${tools ? tools.length : 0} tools`)
+}
+
+console.log('\n  New Tool Spot Checks')
+const newTools = [
+  'type_scale_apply','type_audit','type_normalize','set_text_content',
+  'color_palette_generate','color_harmonize','color_darkmode','color_check_all',
+  'create_prototype_link','create_overlay','set_fixed_position','create_flow',
+  'create_new_page','switch_page','duplicate_page','rename_page',
+  'search_library','swap_component','detach_instance','component_audit',
+  'annotate_spacing','annotate_colors','create_spec_sheet','create_changelog',
+  'create_glassmorphism','create_neumorphism','set_gradient_fill','create_shadow_system',
+  'create_table_frame','create_form','create_nav_bar','create_card_grid',
+  'create_sidebar_layout','create_footer','create_header',
+  'batch_set_font','batch_round_values',
+  'export_component_inventory','export_spacing_tokens',
+]
+let newCount = 0
+for (const name of newTools) {
+  if (getTool(name)) newCount++
+}
+assert(newCount >= 35, `${newCount} new tools verified (≥35)`)
+
+console.log('\n  Final Comparison')
+console.log(`  Conductor v3: ${TOOL_COUNT} tools, ${Object.keys(CATEGORIES).length} categories`)
+console.log(`  Competitors:    ~45 tools max`)
+console.log(`  Framelink:     ~5 tools`)
+console.log(`  Official:      ~12 tools`)
+console.log(`  Advantage:     ${TOOL_COUNT - 45} more tools than nearest competitor`)
 
 console.log('\n  ' + passed + ' passed, ' + failed + ' failed\n')
 process.exit(failed > 0 ? 1 : 0)

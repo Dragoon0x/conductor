@@ -2,7 +2,7 @@
 // CONDUCTOR v3 — Design Intelligence Engine
 // ═══════════════════════════════════════════
 // This is what separates Conductor from every other Figma MCP.
-// Figsor proxies shapes. Conductor designs.
+// Every tool has design intelligence built in.
 
 // ─── 8px Grid ───
 export function snap(v, grid = 8) { return Math.round(v / grid) * grid }

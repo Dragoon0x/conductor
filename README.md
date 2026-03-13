@@ -1,6 +1,6 @@
 # conductor-figma
 
-Design-intelligent MCP server for Figma. 123 tools across 10 categories. Every tool has built-in design intelligence — 8px grid, type scales, semantic colors, accessibility checks, component defaults. Not a shape proxy. A design engine.
+Design-intelligent MCP server for Figma. 201 tools across 17 categories. Every tool has built-in design intelligence — 8px grid, type scales, semantic colors, accessibility checks, component defaults. Not a shape proxy. A design engine.
 
 ```
 npx conductor-figma
@@ -8,9 +8,8 @@ npx conductor-figma
 
 ## What makes this different
 
-**Figsor** has 45 tools that proxy shapes. You tell it "create a rectangle at 43px with 7px padding" and it does exactly that — even though those values are wrong.
 
-**Conductor** has 123 tools with design intelligence. You say "create a button" and it knows: 44px height (touch target), 20px horizontal padding (8px grid), 10px radius, 15px Semi Bold text. Every value is intentional.
+**Conductor** has 201 tools with design intelligence. You say "create a button" and it knows: 44px height (touch target), 20px horizontal padding (8px grid), 10px radius, 15px Semi Bold text. Every value is intentional.
 
 ## Setup
 
@@ -47,69 +46,70 @@ Open Figma → Run the Conductor plugin → Chat in Cursor:
 
 > "Export this frame as React + Tailwind code"
 
-## 123 Tools in 10 Categories
+## 201 Tools in 17 Categories
 
-### Create & Layout (13)
-create_frame, create_text, create_rectangle, create_ellipse, create_line, create_svg_node, create_component, create_component_instance, create_component_set, create_smart_component, set_auto_layout, create_section, create_page
-
-### Modify & Style (25)
-modify_node, set_fill (solid + gradients), set_stroke, set_effects (shadows + blur), set_image_fill, style_text_range, set_constraints, delete_node, move_to_parent, duplicate_node, group_nodes, ungroup_nodes, resize_node, align_nodes, set_corner_radius, set_opacity, set_blend_mode, set_clip_content, rename_node, lock_node, set_visibility, reorder_node, set_layout_sizing, flatten_node, set_rotation
-
-### Vector & Shape (8)
-create_vector, boolean_operation, create_polygon, create_star, offset_path, create_arrow, create_icon (35 built-in icons), create_divider
-
-### Read & Inspect (18)
-get_selection, get_page_structure, get_node_info, get_nodes_info, find_nodes, get_local_styles, get_local_variables, list_components, list_pages, get_document_info, set_selection, set_focus, get_annotations, set_annotation, list_available_fonts, read_node_css, get_selection_colors, measure_distance
-
-### Variables & Tokens (10)
-create_variable_collection, create_variable, bind_variable, get_variables, update_variable, delete_variable, create_design_tokens, import_tokens, export_tokens, swap_mode
-
-### Export & Code (10)
-export_as_svg, export_as_png, export_to_react, export_design_specs, export_assets, screenshot, copy_css, generate_stylesheet, export_color_palette, export_typography
-
-### Accessibility & Lint (12)
-audit_accessibility, check_contrast, fix_touch_targets, lint_design, fix_spacing, check_naming, suggest_improvements, validate_component, check_consistency, generate_a11y_report, color_blindness_check, responsive_check
-
-### Batch Operations (12)
-batch_rename, batch_style, batch_replace_text, batch_replace_color, batch_resize, batch_align, batch_delete, batch_duplicate, batch_set_visibility, batch_lock, select_all_by_type, clean_hidden_layers
-
-### Design System (10)
-scan_design_system, create_style_guide, detect_inconsistencies, normalize_design, extract_components, get_design_craft_guide, suggest_color_palette, suggest_type_scale, import_design_system, compare_to_system
-
-### Responsive (5)
-create_responsive_variant, set_breakpoint, convert_to_responsive, generate_mobile, stack_for_mobile
+| Category | Count | Highlights |
+|----------|-------|-----------|
+| Create & Layout | 20 | Frames, text, shapes, smart components (18 types), sections, pages, forms, tables, nav bars, cards, sidebars |
+| Modify & Style | 25 | Fills (solid + gradients), strokes, effects, image fills, text ranges, constraints, transforms |
+| Vector & Shape | 8 | Paths, booleans, polygons, stars, 35 built-in icons, arrows, dividers |
+| Read & Inspect | 18 | Selection, page tree, node info, search, CSS export, fonts, annotations, measurements |
+| Variables & Tokens | 10 | Collections, modes, binding, W3C import/export, full token system from brand color |
+| Export & Code | 12 | React + Tailwind, HTML, Vue, Svelte, SVG, PNG, design specs, stylesheets, palettes |
+| Accessibility & Lint | 12 | WCAG audit, contrast, touch targets, font sizes, color blindness, design lint, compliance reports |
+| Batch Operations | 17 | Rename patterns, bulk style, find/replace text/color, clean hidden layers, round values, set fonts |
+| Design System | 10 | Scan, extract, normalize, lint, style guide, palette, type scale, import/export |
+| Responsive | 5 | Mobile/tablet/desktop variants, breakpoints, stacking, responsive conversion |
+| Typography | 10 | Type scale, audit, hierarchy, measure, normalize, font replace, pairing, styles |
+| Color | 10 | Palette generation, harmonies, dark/light mode, contrast check, semantic systems |
+| Prototype | 10 | Links, transitions, overlays, scroll, hover states, flows, fixed position |
+| Page Management | 8 | Create, switch, duplicate, delete, rename, sort, merge, overview |
+| Library | 8 | Search, swap, detach, audit, batch swap, publish |
+| Annotation & Handoff | 10 | Spacing redlines, color swatches, typography specs, spec sheets, changelogs |
+| Effects & Styles | 8 | Glassmorphism, neumorphism, noise, gradients, shadow systems, border gradients |
 
 ## Design Intelligence
 
 Every tool queries the intelligence engine:
 
 - **8px Grid**: All spacing values snapped to 8px grid
-- **Type Scale**: Mathematical ratios (Major Second, Perfect Fourth, Golden)
-- **Semantic Colors**: Full palette from one brand color (dark + light)
-- **Component Defaults**: 18 component types with size variants
-- **Accessibility**: WCAG AA/AAA contrast checking, 44px touch targets
+- **Type Scale**: 7 mathematical ratios (Minor Second through Golden Ratio)
+- **Semantic Colors**: Full palette from one brand color (dark + light modes)
+- **Component Defaults**: 18 component types with size variants (button, input, card, avatar, badge, chip, switch, checkbox, radio, toast, tooltip, modal, dropdown, tabs, table, progress, skeleton, divider)
+- **Accessibility**: WCAG AA/AAA contrast, 44px touch targets, font minimums, color blindness
 - **Font Weights**: Auto-resolves "bold" → "Bold", "600" → "Semi Bold"
 - **Layout Intelligence**: 13 layout presets (row, column, center, spread, grid, sidebar, form)
 
 ## vs Competition
 
-| Feature | Conductor | Figsor | Framelink | Official Figma |
 |---------|-----------|--------|-----------|---------------|
-| Tools | 123 | 45 | 5 | 12 |
+| Tools | 201 | 45 | 5 | 12 |
+| Categories | 17 | ~8 | 1 | ~4 |
 | Design intelligence | Yes | No | No | No |
-| Smart components | Yes | No | No | No |
-| Accessibility audit | Yes | No | No | No |
-| Code export | Yes | No | No | Partial |
-| Batch operations | 12 tools | No | No | No |
-| Design system scan | Yes | No | No | Partial |
-| Responsive tools | 5 tools | No | No | No |
-| Design linting | Yes | No | No | No |
-| 8px grid enforcement | Yes | No | No | No |
-
-## Disclaimer
-
-Experimental software. DYOR.
+| Smart components | 18 types | No | No | No |
+| Accessibility | 12 tools | No | No | No |
+| Code export | 5 frameworks | No | No | Partial |
+| Batch operations | 17 tools | No | No | No |
+| Design system | 10 tools (free) | $9 add-on | No | Partial |
+| Responsive | 5 tools | No | No | No |
+| Typography | 10 tools | No | No | No |
+| Prototype | 10 tools | No | No | No |
+| Annotation | 10 tools | No | No | No |
 
 ## License
 
 MIT. Built by [0xDragoon](https://github.com/dragoon0x).
+
+## Disclaimer
+
+**This software is provided strictly for educational and experimental purposes only.** Do your own research (DYOR) before using in any production environment.
+
+- This is experimental, open-source software provided "as-is" with **absolutely no warranties, representations, or guarantees of any kind** — express, implied, or statutory — including but not limited to warranties of merchantability, fitness for a particular purpose, accuracy, reliability, or non-infringement.
+- The author(s), contributor(s), and maintainer(s) of this project — including the individual known as 0xDragoon — **shall not be held liable** for any direct, indirect, incidental, special, consequential, or punitive damages, losses, costs, or expenses arising from or related to the use, misuse, inability to use, or reliance upon this software, including but not limited to loss of data, loss of revenue, business interruption, or damages to Figma files, design assets, or any other digital property.
+- This software interacts with third-party services (Figma, Cursor, Claude Code) over which the author has no control. The author assumes **no responsibility** for any changes, outages, API modifications, or policy updates by these third parties that may affect the functionality of this software.
+- No data collection, telemetry, or analytics are performed by this software. All operations run locally between your machine and the Figma desktop application. However, the author makes **no guarantees** regarding data security, privacy, or confidentiality.
+- This software is **not affiliated with, endorsed by, or sponsored by** Figma, Inc., Anthropic, PBC, Anysphere (Cursor), or any other company or organization.
+- Users are solely responsible for ensuring their use of this software complies with all applicable laws, regulations, terms of service, and licensing agreements — including Figma's Terms of Service and API usage policies.
+- **Use at your own risk.** Always back up your Figma files before running any automated operations. The author is not responsible for any unintended modifications, deletions, or corruption of design files.
+
+MIT License · Copyright © 2025 0xDragoon
