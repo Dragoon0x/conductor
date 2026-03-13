@@ -1,12 +1,8 @@
-// ═══════════════════════════════════════════
-// CONDUCTOR v3 — MCP Server (stdio)
-// ═══════════════════════════════════════════
-
 import { TOOL_LIST, TOOL_COUNT, getTool, CATEGORIES } from './tools/registry.js'
 import { handleTool } from './tools/handlers.js'
 import { createBridge } from './bridge.js'
 
-var VERSION = '3.0.3'
+var VERSION = '3.0.4'
 var bridge = null
 var bridgeStarted = false
 
@@ -21,9 +17,11 @@ function ensureBridge() {
   return bridge
 }
 
-// ─── JSON-RPC over stdio ───
-var buffer = ''
+if (process.stdout._handle && process.stdout._handle.setBlocking) {
+  process.stdout._handle.setBlocking(true)
+}
 
+var buffer = ''
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', function(chunk) {
   buffer += chunk
@@ -32,37 +30,31 @@ process.stdin.on('data', function(chunk) {
 
 function processBuffer() {
   while (true) {
-    // Accept both \r\n\r\n and \n\n as header terminators
-    var headerEnd = buffer.indexOf('\r\n\r\n')
-    var headerLen = 4
-    if (headerEnd === -1) {
-      headerEnd = buffer.indexOf('\n\n')
-      headerLen = 2
+    var nlIdx = buffer.indexOf('\n')
+    if (nlIdx === -1) {
+      if (buffer.length > 0 && buffer[0] === '{') {
+        try { JSON.parse(buffer) } catch(e) { break }
+        tryParse(buffer)
+        buffer = ''
+      }
+      break
     }
-    if (headerEnd === -1) break
-
-    var header = buffer.slice(0, headerEnd)
-    var match = header.match(/Content-Length:\s*(\d+)/i)
-    if (!match) { buffer = buffer.slice(headerEnd + headerLen); continue }
-
-    var len = parseInt(match[1])
-    var bodyStart = headerEnd + headerLen
-    if (buffer.length < bodyStart + len) break
-
-    var body = buffer.slice(bodyStart, bodyStart + len)
-    buffer = buffer.slice(bodyStart + len)
-
-    try {
-      var msg = JSON.parse(body)
-      handleMessage(msg)
-    } catch (e) { log('Parse error:', e.message) }
+    var line = buffer.slice(0, nlIdx).trim()
+    buffer = buffer.slice(nlIdx + 1)
+    if (line.length === 0) continue
+    if (line[0] === '{') tryParse(line)
   }
 }
 
+function tryParse(str) {
+  try {
+    var msg = JSON.parse(str)
+    handleMessage(msg)
+  } catch (e) { log('Parse error:', e.message) }
+}
+
 function send(msg) {
-  var json = JSON.stringify(msg)
-  var out = 'Content-Length: ' + Buffer.byteLength(json) + '\r\n\r\n' + json
-  process.stdout.write(out)
+  process.stdout.write(JSON.stringify(msg) + '\n')
 }
 
 function respond(id, result) { send({ jsonrpc: '2.0', id: id, result: result }) }
@@ -73,20 +65,21 @@ function handleMessage(msg) {
   var method = msg.method
   var params = msg.params || {}
 
-  log('← ' + method + (id ? ' #' + id : ''))
+  log('<- ' + method + (id !== undefined ? ' #' + id : ''))
 
   switch (method) {
     case 'initialize':
       ensureBridge()
       log('Conductor v' + VERSION + ' ready — ' + TOOL_COUNT + ' tools')
       respond(id, {
-        protocolVersion: '2024-11-05',
+        protocolVersion: params.protocolVersion || '2024-11-05',
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'conductor-figma', version: VERSION },
       })
       return
 
     case 'notifications/initialized':
+    case 'notifications/cancelled':
       return
 
     case 'tools/list':
@@ -122,7 +115,7 @@ function handleMessage(msg) {
       return
 
     default:
-      if (id) respondError(id, -32601, 'Unknown method: ' + method)
+      if (id !== undefined) respondError(id, -32601, 'Unknown method: ' + method)
   }
 }
 
