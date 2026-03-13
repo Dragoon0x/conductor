@@ -2,18 +2,14 @@ import { TOOL_LIST, TOOL_COUNT, getTool, CATEGORIES } from './tools/registry.js'
 import { handleTool } from './tools/handlers.js'
 import { createBridge } from './bridge.js'
 
-var VERSION = '3.0.4'
-var bridge = null
-var bridgeStarted = false
+var VERSION = '3.3.1'
+var bridge = createBridge()
+bridge.start()
+var bridgeStarted = true
 
 function log() { process.stderr.write('[conductor] ' + Array.prototype.join.call(arguments, ' ') + '\n') }
 
 function ensureBridge() {
-  if (!bridgeStarted) {
-    bridgeStarted = true
-    bridge = createBridge()
-    bridge.start()
-  }
   return bridge
 }
 

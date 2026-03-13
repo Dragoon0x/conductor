@@ -39,7 +39,7 @@ function setStatus(connected) {
 
 function connect() {
   try {
-    ws = new WebSocket(`ws://localhost:${port}`);
+    ws = new WebSocket(`ws://127.0.0.1:${port}`);
     ws.onopen = () => {
       setStatus(true);
       log('Connected to MCP server');
