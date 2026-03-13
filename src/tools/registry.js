@@ -1150,3 +1150,25 @@ export const CATEGORIES = {
 
 export function getTool(name) { return ALL_TOOLS[name] || null }
 export function getToolsByCategory(cat) { return CATEGORIES[cat] || [] }
+
+// ═══ DESIGN FROM PROMPT (1) ═══
+const INTERPRET = {
+  design_from_prompt: tool('design_from_prompt', 'Takes any natural language description and generates a complete Figma design. Analyzes mood (minimal, bold, playful, luxury, corporate, techy, organic, brutalist, editorial), detects industry (fintech, health, saas, ecommerce, etc.), picks appropriate colors, spacing density, shadow depth, corner radii, and typography. Then composes a multi-section design with 30-300+ elements.', {
+    prompt: req('string', 'Natural language description. Examples: "A dark fintech dashboard with metrics and charts", "A playful education landing page with pricing", "A minimal luxury brand site for a candle company called Ember"'),
+    width: opt('number', 'Frame width', 1440),
+  }, 'interpret'),
+
+  interpret_prompt: tool('interpret_prompt', 'Analyzes a design prompt and returns the interpretation without generating anything. Shows what mood, industry, colors, and sections would be used. Good for previewing before generating.', {
+    prompt: req('string', 'Design description to analyze'),
+  }, 'interpret'),
+}
+
+// Update ALL_TOOLS
+Object.assign(ALL_TOOLS, INTERPRET)
+
+// Refresh counts
+const _newList = Object.values(ALL_TOOLS)
+const _newCount = Object.keys(ALL_TOOLS).length
+
+// Add category
+CATEGORIES.interpret = Object.keys(INTERPRET)

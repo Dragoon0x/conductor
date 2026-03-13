@@ -7,6 +7,8 @@ import {
   checkContrast, auditAccessibility, getDesignCraftGuide, resolveFontWeight,
   hexToFigmaColor, linearGradient, radialGradient, SPACING, RADIUS, SHADOWS,
 } from '../design/intelligence.js'
+import { composeSmartComponent, composeSection, composePage, runSequence } from '../design/composer.js'
+import { interpretDesign, applyDesignParams, getInterpretationSummary } from '../design/interpreter.js'
 
 // ─── Icon SVG Library ───
 const ICONS = {
@@ -58,11 +60,95 @@ export async function handleTool(name, args, bridge) {
     case 'check_contrast': return checkContrast(args.foreground, args.background)
     case 'suggest_color_palette': return semanticColors(args.brandColor, args.mode || 'dark')
     case 'suggest_type_scale': return typeScale(args.baseSize || 16, args.ratio || 'major2')
+    case 'interpret_prompt': return getInterpretationSummary(interpretDesign(args.prompt))
   }
 
   // Everything else needs Figma
   if (!bridge || !bridge.isConnected()) {
     throw new Error('Figma plugin not connected. Open Figma → Plugins → Development → Conductor, then try again.')
+  }
+
+  // ─── Design from prompt: the big one ───
+  if (name === 'design_from_prompt') {
+    var interpretation = interpretDesign(args.prompt)
+    var params = interpretation.params
+    var brandColor = interpretation.brandColor
+    var mode = interpretation.mode
+    var W = args.width || interpretation.width
+
+    // Create page root
+    var pageColors = semanticColors(brandColor, mode)
+    var rootResult = await bridge.send('create_frame', {
+      name: interpretation.industry + ' — ' + interpretation.mood,
+      direction: 'VERTICAL', width: W, gap: 0,
+      fill: pageColors.bg, primaryAxisSizingMode: 'HUG'
+    })
+
+    var totalElements = 1
+    var sectionResults = []
+
+    // Build each detected section
+    for (var di = 0; di < interpretation.sections.length; di++) {
+      var secType = interpretation.sections[di]
+      var secCmds = composeSection(secType, interpretation.content, brandColor, mode, W)
+      if (secCmds && secCmds.length > 0) {
+        // Apply mood-based design params
+        secCmds = applyDesignParams(secCmds, params)
+        // Parent first element to page root
+        secCmds[0].data.parentId = rootResult.id
+        var secRes = await runSequence(bridge, secCmds)
+        totalElements += secRes.length
+        sectionResults.push({ section: secType, elements: secRes.length })
+      }
+    }
+
+    return {
+      interpretation: getInterpretationSummary(interpretation),
+      created: {
+        rootId: rootResult.id,
+        totalElements: totalElements,
+        sections: sectionResults,
+      }
+    }
+  }
+
+  // ─── Composition commands: generate multi-element designs ───
+  if (name === 'create_smart_component') {
+    var compCmds = composeSmartComponent(args.type, args.variant, args.label, args.brandColor, args.mode)
+    if (!compCmds) throw new Error('Unknown component type: ' + args.type)
+    var compResults = await runSequence(bridge, compCmds)
+    return { created: args.type, variant: args.variant || 'default', elements: compResults.length, rootId: compResults[0] && compResults[0].id }
+  }
+
+  if (name === 'create_section') {
+    var secCmds = composeSection(args.type, args.content, args.brandColor, args.mode, args.width)
+    if (!secCmds || secCmds.length === 0) throw new Error('Unknown section type: ' + args.type)
+    var secResults = await runSequence(bridge, secCmds)
+    return { created: args.type + ' section', elements: secResults.length, rootId: secResults[0] && secResults[0].id }
+  }
+
+  if (name === 'create_page') {
+    var pageSpec = composePage(args.type, args.content, args.brandColor, args.mode, args.width)
+    // Create page root frame
+    var rootResult = await bridge.send('create_frame', {
+      name: (args.type || 'Page').charAt(0).toUpperCase() + (args.type || 'page').slice(1) + ' Page',
+      direction: 'VERTICAL', width: pageSpec.width, gap: 0,
+      fill: semanticColors(pageSpec.brand, pageSpec.mode || 'dark').bg,
+      primaryAxisSizingMode: 'HUG'
+    })
+    // Build each section inside the page
+    var totalElements = 1
+    for (var si = 0; si < pageSpec.sections.length; si++) {
+      var secType = pageSpec.sections[si]
+      var secCmds2 = composeSection(secType, pageSpec.content, pageSpec.brand, pageSpec.mode, pageSpec.width)
+      if (secCmds2 && secCmds2.length > 0) {
+        // Set first command's parent to page root
+        secCmds2[0].data.parentId = rootResult.id
+        var secRes = await runSequence(bridge, secCmds2)
+        totalElements += secRes.length
+      }
+    }
+    return { created: args.type + ' page', sections: pageSpec.sections, elements: totalElements, rootId: rootResult.id }
   }
 
   // Apply design intelligence to args before sending
