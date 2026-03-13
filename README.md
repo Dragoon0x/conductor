@@ -80,22 +80,6 @@ Every tool queries the intelligence engine:
 - **Font Weights**: Auto-resolves "bold" → "Bold", "600" → "Semi Bold"
 - **Layout Intelligence**: 13 layout presets (row, column, center, spread, grid, sidebar, form)
 
-## vs Competition
-
-|---------|-----------|--------|-----------|---------------|
-| Tools | 201 | 45 | 5 | 12 |
-| Categories | 17 | ~8 | 1 | ~4 |
-| Design intelligence | Yes | No | No | No |
-| Smart components | 18 types | No | No | No |
-| Accessibility | 12 tools | No | No | No |
-| Code export | 5 frameworks | No | No | Partial |
-| Batch operations | 17 tools | No | No | No |
-| Design system | 10 tools (free) | $9 add-on | No | Partial |
-| Responsive | 5 tools | No | No | No |
-| Typography | 10 tools | No | No | No |
-| Prototype | 10 tools | No | No | No |
-| Annotation | 10 tools | No | No | No |
-
 ## License
 
 MIT. Built by [0xDragoon](https://github.com/dragoon0x).
