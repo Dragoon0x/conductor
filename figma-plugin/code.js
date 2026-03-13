@@ -123,9 +123,8 @@ async function executeCommand(cmd, data) {
       frame.name = data.name || 'Frame'
       if (data.width) frame.resize(data.width, data.height || data.width)
       frame.layoutMode = data.direction || 'VERTICAL'
-      frame.primaryAxisSizingMode = data.primaryAxisSizingMode === 'FILL' ? 'FIXED' : (data.primaryAxisSizingMode === 'FIXED' ? 'FIXED' : 'AUTO')
-      frame.counterAxisSizingMode = data.counterAxisSizingMode === 'FILL' ? 'FIXED' : (data.counterAxisSizingMode === 'FIXED' ? 'FIXED' : 'AUTO')
-      if (data.primaryAxisSizingMode === 'FILL') frame.layoutGrow = 1
+      frame.primaryAxisSizingMode = data.primaryAxisSizingMode === 'FILL' ? 'FIXED' : (data.primaryAxisSizingMode || 'HUG')
+      frame.counterAxisSizingMode = data.counterAxisSizingMode || 'HUG'
       if (data.paddingTop !== undefined) frame.paddingTop = data.paddingTop
       if (data.paddingRight !== undefined) frame.paddingRight = data.paddingRight
       if (data.paddingBottom !== undefined) frame.paddingBottom = data.paddingBottom
@@ -304,8 +303,8 @@ async function executeCommand(cmd, data) {
       if (data.gap !== undefined) node.itemSpacing = data.gap
       if (data.primaryAxisAlignItems) node.primaryAxisAlignItems = data.primaryAxisAlignItems
       if (data.counterAxisAlignItems) node.counterAxisAlignItems = data.counterAxisAlignItems
-      if (data.primaryAxisSizingMode) node.primaryAxisSizingMode = data.primaryAxisSizingMode === 'FILL' ? 'FIXED' : (data.primaryAxisSizingMode === 'FIXED' ? 'FIXED' : 'AUTO')
-      if (data.counterAxisSizingMode) node.counterAxisSizingMode = data.counterAxisSizingMode === 'FILL' ? 'FIXED' : (data.counterAxisSizingMode === 'FIXED' ? 'FIXED' : 'AUTO')
+      if (data.primaryAxisSizingMode) node.primaryAxisSizingMode = data.primaryAxisSizingMode === 'FILL' ? 'FIXED' : data.primaryAxisSizingMode
+      if (data.counterAxisSizingMode) node.counterAxisSizingMode = data.counterAxisSizingMode === 'FILL' ? 'FIXED' : data.counterAxisSizingMode
       return { id: node.id, layout: 'set' }
     }
 
