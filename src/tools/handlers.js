@@ -10,6 +10,8 @@ import {
 import { composeSmartComponent, composeSection, composePage, runSequence } from '../design/composer.js'
 import { interpretDesign, applyDesignParams, getInterpretationSummary } from '../design/interpreter.js'
 
+function log() { process.stderr.write('[conductor] ' + Array.prototype.join.call(arguments, ' ') + '\n') }
+
 // ─── Icon SVG Library ───
 const ICONS = {
   'arrow-right': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
@@ -78,27 +80,45 @@ export async function handleTool(name, args, bridge) {
 
     // Create page root
     var pageColors = semanticColors(brandColor, mode)
-    var rootResult = await bridge.send('create_frame', {
-      name: interpretation.industry + ' — ' + interpretation.mood,
-      direction: 'VERTICAL', width: W, gap: 0,
-      fill: pageColors.bg, primaryAxisSizingMode: 'HUG'
-    })
+    log('Creating root frame...')
+    var rootResult
+    try {
+      rootResult = await bridge.send('create_frame', {
+        name: interpretation.industry + ' — ' + interpretation.mood,
+        direction: 'VERTICAL', width: W, gap: 0,
+        fill: pageColors.bg
+      })
+    } catch (e) {
+      log('Root frame error:', e.message)
+      throw new Error('Failed to create root frame: ' + e.message)
+    }
 
+    if (!rootResult || !rootResult.id) {
+      log('Root result invalid:', JSON.stringify(rootResult))
+      throw new Error('Root frame created but no ID returned. Response: ' + JSON.stringify(rootResult))
+    }
+
+    log('Root frame created:', rootResult.id)
     var totalElements = 1
     var sectionResults = []
 
     // Build each detected section
     for (var di = 0; di < interpretation.sections.length; di++) {
       var secType = interpretation.sections[di]
+      log('Building section:', secType)
       var secCmds = composeSection(secType, interpretation.content, brandColor, mode, W)
       if (secCmds && secCmds.length > 0) {
-        // Apply mood-based design params
         secCmds = applyDesignParams(secCmds, params)
-        // Parent first element to page root
         secCmds[0].data.parentId = rootResult.id
-        var secRes = await runSequence(bridge, secCmds)
-        totalElements += secRes.length
-        sectionResults.push({ section: secType, elements: secRes.length })
+        try {
+          var secRes = await runSequence(bridge, secCmds)
+          totalElements += secRes.length
+          sectionResults.push({ section: secType, elements: secRes.length })
+          log('Section ' + secType + ': ' + secRes.length + ' elements')
+        } catch (e) {
+          log('Section ' + secType + ' error:', e.message)
+          sectionResults.push({ section: secType, error: e.message })
+        }
       }
     }
 
@@ -133,8 +153,7 @@ export async function handleTool(name, args, bridge) {
     var rootResult = await bridge.send('create_frame', {
       name: (args.type || 'Page').charAt(0).toUpperCase() + (args.type || 'page').slice(1) + ' Page',
       direction: 'VERTICAL', width: pageSpec.width, gap: 0,
-      fill: semanticColors(pageSpec.brand, pageSpec.mode || 'dark').bg,
-      primaryAxisSizingMode: 'HUG'
+      fill: semanticColors(pageSpec.brand, pageSpec.mode || 'dark').bg
     })
     // Build each section inside the page
     var totalElements = 1

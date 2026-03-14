@@ -9,6 +9,6 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["*"],
-    "reasoning": "Connects to local MCP WebSocket server"
+    "reasoning": "Connects to local MCP WebSocket server on 127.0.0.1:3055"
   }
 }
